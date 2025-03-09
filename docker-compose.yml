@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  go-server:
+    build: .
+    ports:
+      - "8080:8080"   # TCP server port
+      - "9090:9090/udp" # UDP server port
+    restart: always
