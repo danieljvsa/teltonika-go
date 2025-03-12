@@ -1,5 +1,5 @@
 package main
 
-func decode(data []byte) {
+func decodeCodec8(data []byte) {
 
 }
