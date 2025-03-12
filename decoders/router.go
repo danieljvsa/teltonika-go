@@ -1,10 +1,7 @@
 package main
 
 import (
-	"codec8"
 	"fmt"
-	"net"
-	"os"
 )
 
 func router(request []byte) {
@@ -16,18 +13,18 @@ func router(request []byte) {
 	case "08":
 		decodeCodec8(data)
 	case "8E":
-    decodeCodec8Ext(data)
+		decodeCodec8Ext(data)
 	case "0C":
-    decodeCodec12(data)
+		decodeCodec12(data)
 	case "0D":
-    decodeCodec13(data)
+		decodeCodec13(data)
 	case "0E":
-    decodeCodec14(data)
+		decodeCodec14(data)
 	case "0F":
-    decodeCodec15(data)
+		decodeCodec15(data)
 	case "10":
-    decodeCodec16(data)
+		decodeCodec16(data)
 	default:
-    throw "Unknown codec"
+		fmt.Sprintf("Unknown codec: %s", codec)
 	}
 }
