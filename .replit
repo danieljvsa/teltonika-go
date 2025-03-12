@@ -1,0 +1,8 @@
+modules = ["go-1.21", "go-1.23"]
+
+[nix]
+channel = "stable-24_05"
+
+[[ports]]
+localPort = 8080
+externalPort = 80
