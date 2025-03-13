@@ -1,6 +1,7 @@
-package client
+package main
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"net"
@@ -8,13 +9,20 @@ import (
 )
 
 func main() {
+	codec8 := "000000000000003608010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000010000C7CF"
 	protocol := flag.String("protocol", "tcp", "Protocol to use: tcp or udp")
 	host := flag.String("host", "localhost", "Server host")
 	port := flag.String("port", "8080", "Server port")
-	message := flag.String("message", "Hello, Server!", "Message to send")
+	message := flag.String("message", codec8, "Message to send")
 	flag.Parse()
 
 	addr := fmt.Sprintf("%s:%s", *host, *port)
+
+	rawBytes, err := hex.DecodeString(*message)
+	if err != nil {
+		fmt.Println("Error decoding hex:", err)
+		return
+	}
 
 	if *protocol == "tcp" {
 		conn, err := net.Dial("tcp", addr)
@@ -24,7 +32,7 @@ func main() {
 		}
 		defer conn.Close()
 
-		_, err = conn.Write([]byte(*message))
+		_, err = conn.Write([]byte(rawBytes))
 		if err != nil {
 			fmt.Println("Error sending message:", err)
 			os.Exit(1)
@@ -46,7 +54,7 @@ func main() {
 		}
 		defer conn.Close()
 
-		_, err = conn.Write([]byte(*message))
+		_, err = conn.Write([]byte(rawBytes))
 		if err != nil {
 			fmt.Println("Error sending message:", err)
 			os.Exit(1)

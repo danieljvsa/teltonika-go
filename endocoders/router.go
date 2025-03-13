@@ -2,13 +2,22 @@ package main
 
 import (
 	"fmt"
-	"net"
-	"os"
+	"strconv"
 )
 
 func router(request []byte) {
 	header := request[:8]
-	dataLength := request[8:12]
+	if string(header) != "00000000" {
+		fmt.Println("Invalid header")
+		return
+	}
+
+	dataLength, err := strconv.ParseInt(string(request[8:12]), 16, 64)
+	if err != nil {
+		fmt.Println("Error parsing data length:", err)
+		return
+	}
+
 	codec := request[12:14]
 	data := request[14:]
 	switch string(codec) {

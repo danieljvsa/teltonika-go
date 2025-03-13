@@ -1,25 +1,28 @@
-package main
+package decoders
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strconv"
 )
 
-func router(request []byte) {
-	header := request[:8]
-  if string(header) != "00000000" {
-    fmt.Println("Invalid header")
-    return
-  }
-  
-	dataLength, err := strconv.ParseInt(string(request[8:12]), 16, 64)
+func RouterDecoder(request []byte) {
+	header := hex.EncodeToString(request[:4])
+	if header != "00000000" {
+		fmt.Println("Invalid header: ", header)
+		return
+	}
+
+	dataLength, err := strconv.ParseInt(hex.EncodeToString(request[4:8]), 16, 64)
 	if err != nil {
 		fmt.Println("Error parsing data length:", err)
 		return
 	}
-  
-	codec := request[12:14]
-	data := request[14:]
+
+	codec := hex.EncodeToString(request[8:9])
+	data := request[9:]
+	fmt.Println("Codec:", codec)
+	fmt.Println("Data Length:", dataLength)
 	switch string(codec) {
 	case "08":
 		decodeCodec8(data, dataLength)
