@@ -7,12 +7,12 @@ import (
 )
 
 type GPSData struct {
-	latitude  int64
-	longitude int64
-	altitude  int64
-	angle     int64
-	satelites int64
-	speed     int64
+	Latitude  int64
+	Longitude int64
+	Altitude  int64
+	Angle     int64
+	Satelites int64
+	Speed     int64
 }
 
 func CalcTimestamp(data []byte) *int64 {
@@ -57,19 +57,19 @@ func DecodeGPSData(data []byte) *GPSData {
 		return nil
 	}
 
-	fmt.Println("latitude: ", latitude)
-	fmt.Println("longitude: ", longitude)
-	fmt.Println("altitude: ", altitude)
-	fmt.Println("angle: ", angle)
-	fmt.Println("satelites: ", satelites)
-	fmt.Println("speed: ", speed)
+	fmt.Println("Latitude:", latitude)
+	fmt.Println("Longitude:", longitude)
+	fmt.Println("Altitude:", altitude)
+	fmt.Println("Angle:", angle)
+	fmt.Println("Satelites:", satelites)
+	fmt.Println("Speed:", speed)
 
 	return &GPSData{
-		latitude,
-		longitude,
-		altitude,
-		angle,
-		satelites,
-		speed,
+		Latitude:  latitude,
+		Longitude: longitude,
+		Altitude:  altitude,
+		Angle:     angle,
+		Satelites: satelites,
+		Speed:     speed,
 	}
 }

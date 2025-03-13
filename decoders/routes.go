@@ -9,7 +9,7 @@ import (
 func RouterDecoder(request []byte) {
 	header := hex.EncodeToString(request[:4])
 	if header != "00000000" {
-		fmt.Println("Invalid header: ", header)
+		fmt.Println("Invalid header:", header)
 		return
 	}
 
