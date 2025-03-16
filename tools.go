@@ -1,9 +1,10 @@
-package tools
+package main
 
 import (
 	"encoding/hex"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 type GPSData struct {
@@ -15,14 +16,14 @@ type GPSData struct {
 	Speed     int64
 }
 
-func CalcTimestamp(data []byte) *int64 {
+func CalcTimestamp(data []byte) *time.Time {
 	timestamp, err := strconv.ParseInt(hex.EncodeToString(data), 16, 64)
 	if err != nil {
 		fmt.Println("Error parsing timestamp:", err)
 		return nil
 	}
-
-	return &timestamp
+	date := time.UnixMilli(timestamp).UTC()
+	return &date
 }
 
 func DecodeGPSData(data []byte) *GPSData {
@@ -31,6 +32,7 @@ func DecodeGPSData(data []byte) *GPSData {
 		fmt.Println("Error parsing latitude:", err)
 		return nil
 	}
+
 	longitude, err := strconv.ParseInt(hex.EncodeToString(data[4:8]), 16, 64)
 	if err != nil {
 		fmt.Println("Error parsing longitude:", err)

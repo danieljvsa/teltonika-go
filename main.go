@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-
-	"github.com/danieljvsa/geolocation_server/decoders"
 )
 
 func main() {
@@ -47,7 +45,7 @@ func handleTCPConnection(conn net.Conn) {
 		return
 	}
 	fmt.Printf("Received TCP message: %s\n", string(buf[:n]))
-	decoders.RouterDecoder(buf[:n])
+	RouterDecoder(buf[:n])
 	conn.Write([]byte("TCP message received\n"))
 
 }
