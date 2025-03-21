@@ -59,6 +59,9 @@ func DecodeGPSData(data []byte) *GPSData {
 		return nil
 	}
 
+	longitude = longitude / 10000000.0
+	latitude = latitude / 10000000.0
+
 	fmt.Println("Latitude:", latitude)
 	fmt.Println("Longitude:", longitude)
 	fmt.Println("Altitude:", altitude)
