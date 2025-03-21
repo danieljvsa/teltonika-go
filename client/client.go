@@ -9,11 +9,12 @@ import (
 )
 
 func main() {
-	codec8 := "000000000000003608010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000010000C7CF"
+	//exempCodec8 := "000000000000003608010000016B40D8EA300100000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000010000C7CF"
+	exempCodec82 := "000000000000002A08010000018F13F93C000008F66E6C01692CB600C8012C0A00320001848"
 	protocol := flag.String("protocol", "tcp", "Protocol to use: tcp or udp")
 	host := flag.String("host", "localhost", "Server host")
 	port := flag.String("port", "8080", "Server port")
-	message := flag.String("message", codec8, "Message to send")
+	message := flag.String("message", exempCodec82, "Message to send")
 	flag.Parse()
 
 	addr := fmt.Sprintf("%s:%s", *host, *port)
