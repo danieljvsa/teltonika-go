@@ -15,7 +15,7 @@ func decodeCodec8(data []byte, dataLength int64) {
 
 	timestamp := CalcTimestamp(data[2:9])
 	if timestamp == nil {
-		fmt.Println("Error parsing Timestamp:", err)
+		fmt.Println("Error parsing Timestamp:", timestamp)
 		return
 	}
 
