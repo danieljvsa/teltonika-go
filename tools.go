@@ -84,3 +84,42 @@ func DecodeGPSData(data []byte) *GPSData {
 		Speed:     speed,
 	}
 }
+
+func CRC16IBM(data []byte) uint64 {
+	var crc uint16 = 0x0000
+	const poly uint16 = 0x8005
+
+	for _, b := range data {
+		crc ^= uint16(b) << 8
+		for i := 0; i < 8; i++ {
+			if crc&0x8000 != 0 {
+				crc = (crc << 1) ^ poly
+			} else {
+				crc <<= 1
+			}
+		}
+	}
+	return uint64(crc)
+}
+
+func VerifyTramCRC(data []byte) bool {
+	if len(data) < 2 {
+		return false // CRC requires at least 2 bytes
+	}
+
+	// Extract payload (excluding last 2 bytes, which are the CRC)
+	payload := data[:len(data)-2]
+
+	// Extract expected CRC from the last 2 bytes of tram (Big Endian)
+	expectedCRC, err := strconv.ParseUint(hex.EncodeToString(data[len(data)-2:]), 16, 32)
+	if err != nil {
+		fmt.Println("Error parsing CRC-16:", err)
+		return false
+	}
+
+	// Calculate actual CRC
+	calculatedCRC := CRC16IBM(payload)
+
+	// Compare calculated CRC with expected CRC
+	return calculatedCRC == expectedCRC
+}

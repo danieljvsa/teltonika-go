@@ -70,7 +70,30 @@ func TestCalcTimestamp(t *testing.T) {
 
 	// Compare result
 	if !result.Equal(expectedTime) {
-		t.Logf("Result %v", result)
 		t.Errorf("Expected %v, got %v", expectedTime, result)
+	}
+}
+
+func TestVerifyTramCRC(t *testing.T) {
+	// Example payload (before appending CRC)
+	payload := []byte{0x00,0x00,0x29,0x94}
+
+	// Compute correct CRC for the payload
+	crc := CRC16IBM(payload)
+
+	// Construct tram (payload + correct CRC)
+	tram := append(payload, byte(crc>>8), byte(crc&0xFF))
+
+	// Test: Should be valid
+	if !VerifyTramCRC(tram) {
+		t.Error("Expected tram to be authentic, but it was not")
+	}
+
+	// Modify tram (to simulate corruption)
+	tram[0] ^= 0xFF // Flip a bit
+
+	// Test: Should be invalid
+	if VerifyTramCRC(tram) {
+		t.Error("Expected tram to be invalid, but it was authentic")
 	}
 }
