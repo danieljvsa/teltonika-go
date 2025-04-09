@@ -76,7 +76,7 @@ func TestCalcTimestamp(t *testing.T) {
 
 func TestVerifyTramCRC(t *testing.T) {
 	// Example payload (before appending CRC)
-	payload := []byte{0x00,0x00,0x29,0x94}
+	payload := []byte{0x00, 0x00, 0xC7, 0xCF}
 
 	// Compute correct CRC for the payload
 	crc := CRC16IBM(payload)
