@@ -22,12 +22,12 @@ func RouterDecoder(request []byte) {
 	codec := hex.EncodeToString(request[8:9])
 	data := request[9:]
 	fmt.Println("Codec:", codec)
-	fmt.Println("Data Length:", dataLength - 1)
+	fmt.Println("Data Length:", dataLength-1)
 	switch string(codec) {
 	case "08":
-		decodeCodec8(data, dataLength - 1)
+		decodeCodec8(data, dataLength-1)
 	case "8E":
-		decodeCodec8Ext(data, dataLength)
+		decodeCodec8Ext(data, dataLength-1)
 	case "0C":
 		decodeCodec12(data, dataLength)
 	case "0D":

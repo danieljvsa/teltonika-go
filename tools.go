@@ -17,64 +17,57 @@ type GPSData struct {
 	Speed     int64
 }
 
-func CalcTimestamp(data []byte) *time.Time {
+func CalcTimestamp(data []byte) (*time.Time, error) {
 	timestamp, err := strconv.ParseInt(hex.EncodeToString(data), 16, 64)
 	if err != nil {
 		fmt.Println("Error parsing timestamp:", err)
-		return nil
+		return nil, err
 	}
 	date := time.UnixMilli(timestamp).UTC()
-	return &date
+	return &date, nil
 }
 
-func DecodeGPSData(data []byte) *GPSData {
+func DecodeGPSData(data []byte) (*GPSData, error) {
 	if len(data) < 14 {
 		fmt.Println("Invalid data length", len(data))
-		return nil
+		return nil, fmt.Errorf("Invalid data length %d", len(data))
 	}
 
 	lat, err := strconv.ParseUint(hex.EncodeToString(data[4:8]), 16, 32)
 	if err != nil {
 		fmt.Println("Error parsing latitude:", err)
-		return nil
+		return nil, err
 	}
 
 	long, err := strconv.ParseUint(hex.EncodeToString(data[:4]), 16, 32)
 	if err != nil {
 		fmt.Println("Error parsing longitude:", err)
-		return nil
+		return nil, err
 	}
 	altitude, err := strconv.ParseInt(hex.EncodeToString(data[8:10]), 16, 64)
 	if err != nil {
 		fmt.Println("Error parsing altitude:", err)
-		return nil
+		return nil, err
 	}
 	angle, err := strconv.ParseInt(hex.EncodeToString(data[10:12]), 16, 64)
 	if err != nil {
 		fmt.Println("Error parsing angle:", err)
-		return nil
+		return nil, err
 	}
 	satelites, err := strconv.ParseInt(hex.EncodeToString(data[12:13]), 16, 64)
 	if err != nil {
 		fmt.Println("Error parsing satelites:", err)
-		return nil
+		return nil, err
 	}
 
 	speed, err := strconv.ParseInt(hex.EncodeToString(data[13:14]), 16, 64)
 	if err != nil {
 		fmt.Println("Error parsing speed:", err)
-		return nil
+		return nil, err
 	}
 
 	longitude := float64(int32(long)) / 10000000.0
 	latitude := float64(int32(lat)) / 10000000.0
-
-	fmt.Println("Latitude:", latitude)
-	fmt.Println("Longitude:", longitude)
-	fmt.Println("Altitude:", altitude)
-	fmt.Println("Angle:", angle)
-	fmt.Println("Satelites:", satelites)
-	fmt.Println("Speed:", speed)
 
 	return &GPSData{
 		Latitude:  latitude,
@@ -83,7 +76,7 @@ func DecodeGPSData(data []byte) *GPSData {
 		Angle:     angle,
 		Satelites: satelites,
 		Speed:     speed,
-	}
+	}, nil
 }
 
 // CRC16 IBM/ARC implementation (poly = 0x8005, reflected = true, init = 0x0000)
@@ -111,8 +104,5 @@ func isValidTram(tram []byte) bool {
 	data := tram[:len(tram)-4]
 	receivedCRC := uint16(binary.BigEndian.Uint32(tram[length-4:]))
 	calculatedCRC := crc16IBM(data)
-	fmt.Println(receivedCRC, calculatedCRC)
-	fmt.Printf("Calculated CRC-16: 0x%04X (little-endian: [%02X %02X])\n", calculatedCRC, byte(calculatedCRC&0xFF), byte(calculatedCRC>>8))
-	fmt.Printf("Received CRC-16: 0x%04X (little-endian: [%02X %02X])\n", receivedCRC, byte(receivedCRC&0xFF), byte(receivedCRC>>8))
 	return receivedCRC == calculatedCRC
 }

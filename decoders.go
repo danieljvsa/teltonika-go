@@ -27,20 +27,18 @@ func decodeCodec8(data []byte, dataLength int64) (*Codec8Data, error) {
 		return nil, fmt.Errorf("error parsing number of records: %w", err)
 	}
 
-	timestamp := CalcTimestamp(data[2:9])
-	if timestamp == nil {
+	timestamp, err := CalcTimestamp(data[2:9])
+	if err != nil {
 		return nil, fmt.Errorf("error parsing timestamp")
 	}
-
-	fmt.Println("Timestamp:", timestamp)
 
 	priority, err := strconv.ParseInt(hex.EncodeToString(data[9:10]), 16, 64)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing priority: %w", err)
 	}
 
-	gpsData := DecodeGPSData(data[10:25])
-	if gpsData == nil {
+	gpsData, err := DecodeGPSData(data[10:25])
+	if err != nil {
 		return nil, fmt.Errorf("error parsing GPS data")
 	}
 
@@ -57,7 +55,7 @@ func decodeCodec8(data []byte, dataLength int64) (*Codec8Data, error) {
 	tram := append([]byte{0x08}, data...)
 	checkCRC := isValidTram(tram)
 	if !checkCRC {
-		fmt.Println("CRC is not valid")
+		return nil, fmt.Errorf("CRC is not valid")
 	}
 
 	return &Codec8Data{

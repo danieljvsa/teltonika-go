@@ -21,7 +21,6 @@ func decodeIos(data []byte, dataLength int64, startByte int64) (*ResponseDecode,
 	if int(dataLength) < 4 {
 		return &ResponseDecode{IOs: ios_data, NumberOfIOs: 0}, nil
 	}
-	fmt.Println("Data Length:", dataLength, len(data))
 	if int(dataLength) != len(data) {
 		return nil, fmt.Errorf("Invalid data length %d", len(data))
 	}
@@ -32,7 +31,6 @@ func decodeIos(data []byte, dataLength int64, startByte int64) (*ResponseDecode,
 		fmt.Println("Error parsing number of ios:", err)
 		return nil, err
 	}
-	fmt.Println("Number of IO's: ", ios_number)
 	byte += 1
 
 	number_ios_one_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
@@ -41,7 +39,7 @@ func decodeIos(data []byte, dataLength int64, startByte int64) (*ResponseDecode,
 		return nil, err
 	}
 	byte += 1
-	for i := 0; i < int(number_ios_one_byte); i++ {
+	for range int(number_ios_one_byte) {
 		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
 		if err != nil {
 			fmt.Println("Error parsing value of ios one-byte:", err)
@@ -91,7 +89,7 @@ func decodeIos(data []byte, dataLength int64, startByte int64) (*ResponseDecode,
 		return nil, err
 	}
 	byte += 1
-	for i := 0; i < int(number_ios_four_byte); i++ {
+	for range int(number_ios_four_byte) {
 		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
 		if err != nil {
 			fmt.Println("Error parsing value of ios four-byte:", err)
@@ -116,7 +114,7 @@ func decodeIos(data []byte, dataLength int64, startByte int64) (*ResponseDecode,
 		return nil, err
 	}
 	byte += 1
-	for i := 0; i < int(number_ios_eight_byte); i++ {
+	for range int(number_ios_eight_byte) {
 		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
 		if err != nil {
 			fmt.Println("Error parsing value of ios four-byte:", err)
