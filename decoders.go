@@ -54,16 +54,8 @@ func decodeCodec8(data []byte, dataLength int64) (*Codec8Data, error) {
 		return nil, fmt.Errorf("error parsing IO data: %w", err)
 	}
 
-	fmt.Println("Number Of Records:", numberOfRecords)
-	fmt.Println("Timestamp:", *timestamp)
-	fmt.Println("Priority:", priority)
-	fmt.Println("GPSData:", *gpsData)
-	fmt.Println("EventIO:", eventIO)
-	fmt.Println("IOs:", ioData)
-	fmt.Println("CRC16:", data[dataLength:])
-	crc := CRC16IBM(data[dataLength:])
-	tram := append(data[dataLength:], byte(crc>>8), byte(crc&0xFF))
-	checkCRC := VerifyTramCRC(tram)
+	tram := append([]byte{0x08}, data...)
+	checkCRC := isValidTram(tram)
 	if !checkCRC {
 		fmt.Println("CRC is not valid")
 	}

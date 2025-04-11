@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"strconv"
@@ -85,41 +86,33 @@ func DecodeGPSData(data []byte) *GPSData {
 	}
 }
 
-func CRC16IBM(data []byte) uint64 {
+// CRC16 IBM/ARC implementation (poly = 0x8005, reflected = true, init = 0x0000)
+func crc16IBM(data []byte) uint16 {
 	var crc uint16 = 0x0000
-	const poly uint16 = 0x8005
-
 	for _, b := range data {
-		crc ^= uint16(b) << 8
+		crc ^= uint16(b)
 		for i := 0; i < 8; i++ {
-			if crc&0x8000 != 0 {
-				crc = (crc << 1) ^ poly
+			if crc&0x0001 != 0 {
+				crc = (crc >> 1) ^ 0xA001
 			} else {
-				crc <<= 1
+				crc >>= 1
 			}
 		}
 	}
-	return uint64(crc)
+	return crc
 }
 
-func VerifyTramCRC(data []byte) bool {
-	if len(data) < 2 {
-		return false // CRC requires at least 2 bytes
-	}
-
-	// Extract payload (excluding last 2 bytes, which are the CRC)
-	payload := data[:len(data)-2]
-
-	// Extract expected CRC from the last 2 bytes of tram (Big Endian)
-	expectedCRC, err := strconv.ParseUint(hex.EncodeToString(data[len(data)-2:]), 16, 32)
-	if err != nil {
-		fmt.Println("Error parsing CRC-16:", err)
+// Validate tram with last 2 bytes as CRC (little-endian)
+func isValidTram(tram []byte) bool {
+	if len(tram) < 2 {
 		return false
 	}
-
-	// Calculate actual CRC
-	calculatedCRC := CRC16IBM(payload)
-
-	// Compare calculated CRC with expected CRC
-	return calculatedCRC == expectedCRC
+	length := len(tram)
+	data := tram[:len(tram)-4]
+	receivedCRC := uint16(binary.BigEndian.Uint32(tram[length-4:]))
+	calculatedCRC := crc16IBM(data)
+	fmt.Println(receivedCRC, calculatedCRC)
+	fmt.Printf("Calculated CRC-16: 0x%04X (little-endian: [%02X %02X])\n", calculatedCRC, byte(calculatedCRC&0xFF), byte(calculatedCRC>>8))
+	fmt.Printf("Received CRC-16: 0x%04X (little-endian: [%02X %02X])\n", receivedCRC, byte(receivedCRC&0xFF), byte(receivedCRC>>8))
+	return receivedCRC == calculatedCRC
 }
