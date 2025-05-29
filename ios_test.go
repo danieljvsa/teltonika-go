@@ -7,12 +7,11 @@ import (
 
 func TestDecodeIos(t *testing.T) {
 	tests := []struct {
-		name       string
-		data       []byte
-		dataLength int64
-		startByte  int64
-		wantErr    bool
-		want       ResponseDecode
+		name      string
+		data      []byte
+		startByte int64
+		wantErr   bool
+		want      ResponseDecode
 	}{
 		{
 			name: "Valid data with one-byte IO",
@@ -21,18 +20,16 @@ func TestDecodeIos(t *testing.T) {
 				data, _ := hex.DecodeString(hexStr)
 				return data
 			}(),
-			dataLength: 4,
-			startByte:  0,
-			wantErr:    false,
-			want:       ResponseDecode{IOs: []IOData{{IO: 2, Value: "4a"}}, NumberOfIOs: 1},
+			startByte: 0,
+			wantErr:   false,
+			want:      ResponseDecode{IOs: []IOData{{IO: 2, Value: "4a"}}, NumberOfIOs: 1},
 		},
 		{
-			name:       "No IOs",
-			data:       []byte{0x00}, // Zero IO count
-			dataLength: 1,
-			startByte:  0,
-			wantErr:    false,
-			want:       ResponseDecode{IOs: []IOData{}, NumberOfIOs: 0},
+			name:      "No IOs",
+			data:      []byte{0x00}, // Zero IO count
+			startByte: 0,
+			wantErr:   false,
+			want:      ResponseDecode{IOs: []IOData{}, NumberOfIOs: 0},
 		},
 		{
 			name: "Invalid data length (out of bounds)",
@@ -41,10 +38,9 @@ func TestDecodeIos(t *testing.T) {
 				data, _ := hex.DecodeString(hexStr)
 				return data
 			}(),
-			dataLength: 1,
-			startByte:  0,
-			wantErr:    false,
-			want:       ResponseDecode{IOs: []IOData{}, NumberOfIOs: 0},
+			startByte: 0,
+			wantErr:   false,
+			want:      ResponseDecode{IOs: []IOData{}, NumberOfIOs: 0},
 		},
 		{
 			name: "Incorrect byte parsing",
@@ -53,10 +49,9 @@ func TestDecodeIos(t *testing.T) {
 				data, _ := hex.DecodeString(hexStr)
 				return data
 			}(),
-			dataLength: 4,
-			startByte:  0,
-			wantErr:    false,
-			want:       ResponseDecode{IOs: []IOData{{IO: 5, Value: "02"}}, NumberOfIOs: 1},
+			startByte: 0,
+			wantErr:   false,
+			want:      ResponseDecode{IOs: []IOData{{IO: 5, Value: "02"}}, NumberOfIOs: 1},
 		},
 		{
 			name: "Test with all types",
@@ -65,16 +60,15 @@ func TestDecodeIos(t *testing.T) {
 				data, _ := hex.DecodeString(hexStr)
 				return data
 			}(),
-			dataLength: 26,
-			startByte:  0,
-			wantErr:    false,
-			want:       ResponseDecode{IOs: []IOData{{IO: 21, Value: "03"}, {IO: 1, Value: "01"}, {IO: 66, Value: "5e0f"}, {IO: 241, Value: "0000601a"}, {IO: 78, Value: "0000000000000000"}}, NumberOfIOs: 5},
+			startByte: 0,
+			wantErr:   false,
+			want:      ResponseDecode{IOs: []IOData{{IO: 21, Value: "03"}, {IO: 1, Value: "01"}, {IO: 66, Value: "5e0f"}, {IO: 241, Value: "0000601a"}, {IO: 78, Value: "0000000000000000"}}, NumberOfIOs: 5},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := decodeIos(tt.data, tt.dataLength, tt.startByte)
+			got, err := decodeIos(tt.data, tt.startByte)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("decodeIos() error = %v, wantErr %v", err, tt.wantErr)
 			}

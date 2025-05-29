@@ -3,80 +3,83 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"strconv"
 )
 
-func RouterDecoder(request []byte) {
-	header := hex.EncodeToString(request[:4])
-	if header != "00000000" {
-		fmt.Println("Invalid header:", header)
-		return
-	}
-
-	dataLength, err := strconv.ParseInt(hex.EncodeToString(request[4:8]), 16, 64)
-	if err != nil {
-		fmt.Println("Error parsing data length:", err)
-		return
-	}
-
-	codec := hex.EncodeToString(request[8:9])
-	data := request[9:]
-	fmt.Println("Codec:", codec)
-	fmt.Println("Data Length:", dataLength-1)
-	switch string(codec) {
-	case "08":
-		decodeCodec8(data, dataLength-1)
-	case "8E":
-		decodeCodec8Ext(data, dataLength-1)
-	case "0C":
-		decodeCodec12(data, dataLength)
-	case "0D":
-		decodeCodec13(data, dataLength)
-	case "0E":
-		decodeCodec14(data, dataLength)
-	case "0F":
-		decodeCodec15(data, dataLength)
-	case "10":
-		decodeCodec16(data, dataLength)
-	default:
-		fmt.Printf("Unknown codec: %s", codec)
-	}
+type CodecDecoded struct {
+	Response *ResponseType
+	Error    error
 }
 
-func RouterEncoder(request []byte) {
-	header := hex.EncodeToString(request[:4])
-	if string(header) != "00000000" {
-		fmt.Println("Invalid header")
-		return
-	}
+type ResponseType struct {
+	Type   string
+	Result any
+}
 
-	dataLength, err := strconv.ParseInt(hex.EncodeToString(request[4:8]), 16, 64)
+type CodecHeaderResponse struct {
+	CodecData  *CodecData
+	HeaderData *HeaderData
+}
+
+func LoginDecoder(request []byte) *CodecDecoded {
+	isLogin, err := isLogin(request)
 	if err != nil {
-		fmt.Println("Error parsing data length:", err)
-		return
+		return &CodecDecoded{Response: nil, Error: err}
 	}
 
-	codec := hex.EncodeToString(request[8:9])
-	data := request[9:]
-	fmt.Println("Codec:", codec)
-	fmt.Println("Data Length:", dataLength)
-	fmt.Println("Data:", data)
+	if isLogin {
+		login, err := login(request)
+		if err != nil {
+			return &CodecDecoded{Response: nil, Error: err}
+		}
+		fmt.Println("Decoded (Login):", login)
+		res := &ResponseType{Result: login, Type: "Login"}
+		return &CodecDecoded{Response: res, Error: err}
+	}
+
+	return &CodecDecoded{Response: nil, Error: fmt.Errorf("login is not valid")}
+}
+
+func RouterDecoder(request []byte) *CodecDecoded {
+	read := 0
+
+	headerData, err := decodeHeader(request)
+	if err != nil {
+		return &CodecDecoded{Response: nil, Error: err}
+	}
+
+	read += headerData.LastByte
+	codec := hex.EncodeToString(request[read : read+1])
+
+	read += 1
+	data := request[read:]
+	response := &ResponseType{Result: "Codec not supported", Type: "Tram"}
 	switch string(codec) {
 	case "08":
-		encodeCodec8(data, dataLength)
-	case "8E":
-		encodeCodec8(data, dataLength)
+		res, err := decodeCodec8(data, headerData.Protocol)
+		response.Result = &CodecHeaderResponse{CodecData: res, HeaderData: headerData}
+		fmt.Println("Decoded (res): ", res)
+		fmt.Println("Decoded (headerData): ", headerData, headerData.HeaderTCP, headerData.HeaderUDP)
+		return &CodecDecoded{Response: response, Error: err}
+	case "8e":
+		res, err := decodeCodec8Ext(data, headerData.Protocol)
+		response.Result = &CodecHeaderResponse{CodecData: res, HeaderData: headerData}
+		fmt.Println("Decoded (res): ", res)
+		fmt.Println("Decoded (headerData): ", headerData, headerData.HeaderTCP, headerData.HeaderUDP)
+		return &CodecDecoded{Response: response, Error: err}
 	case "0C":
-		encodeCodec8(data, dataLength)
+		return &CodecDecoded{Response: response, Error: err}
 	case "0D":
-		encodeCodec8(data, dataLength)
+		return &CodecDecoded{Response: response, Error: err}
 	case "0E":
-		encodeCodec8(data, dataLength)
+		return &CodecDecoded{Response: response, Error: err}
 	case "0F":
-		encodeCodec8(data, dataLength)
+		return &CodecDecoded{Response: response, Error: err}
 	case "10":
-		encodeCodec8(data, dataLength)
+		return &CodecDecoded{Response: response, Error: err}
 	default:
-		fmt.Printf("Unknown codec: %s", codec)
+		return &CodecDecoded{Response: response, Error: fmt.Errorf("unknown codec: %s", codec)}
 	}
+
 }
+
+func RouterEncoder(request []byte) {}

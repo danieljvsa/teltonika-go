@@ -17,6 +17,37 @@ type GPSData struct {
 	Speed     int64
 }
 
+type LoginData struct {
+	Length int64
+	IMEI   string
+}
+
+type ProtocolData struct {
+	Protocol string
+}
+
+type HeaderDataTCP struct {
+	Header     string
+	DataLength int64
+	LastByte   int
+}
+
+type HeaderDataUDP struct {
+	Length      int64
+	PacketID    int64
+	AVLPacketID int64
+	IMEILength  int64
+	IMEI        string
+	LastByte    int
+}
+
+type HeaderData struct {
+	HeaderTCP *HeaderDataTCP
+	HeaderUDP *HeaderDataUDP
+	Protocol  string
+	LastByte  int
+}
+
 func CalcTimestamp(data []byte) (*time.Time, error) {
 	timestamp, err := strconv.ParseInt(hex.EncodeToString(data), 16, 64)
 	if err != nil {
@@ -30,7 +61,7 @@ func CalcTimestamp(data []byte) (*time.Time, error) {
 func DecodeGPSData(data []byte) (*GPSData, error) {
 	if len(data) < 14 {
 		fmt.Println("Invalid data length", len(data))
-		return nil, fmt.Errorf("Invalid data length %d", len(data))
+		return nil, fmt.Errorf("invalid data length %d", len(data))
 	}
 
 	lat, err := strconv.ParseUint(hex.EncodeToString(data[4:8]), 16, 32)
@@ -105,4 +136,173 @@ func isValidTram(tram []byte) bool {
 	receivedCRC := uint16(binary.BigEndian.Uint32(tram[length-4:]))
 	calculatedCRC := crc16IBM(data)
 	return receivedCRC == calculatedCRC
+}
+
+func decodeHeaderTCP(header []byte) (*HeaderDataTCP, error) {
+	read := 0
+	zeroBytes := hex.EncodeToString(header[:read+4])
+	if zeroBytes != "00000000" {
+		return nil, fmt.Errorf("header is not valid")
+	}
+	read += 4
+
+	dataLength, err := strconv.ParseInt(hex.EncodeToString(header[read:read+4]), 16, 64)
+	if err != nil {
+		return nil, err
+	}
+	read += 4
+
+	headerData := &HeaderDataTCP{
+		Header:     "00000000",
+		DataLength: dataLength,
+		LastByte:   read,
+	}
+	return headerData, nil
+}
+
+func decodeHeaderUDP(header []byte) (*HeaderDataUDP, error) {
+	read := 0
+	if len(header) < 8 {
+		return nil, fmt.Errorf("header is too small")
+	}
+
+	length, err := strconv.ParseInt(hex.EncodeToString(header[:read+2]), 16, 64)
+	if err != nil {
+		return nil, err
+	}
+	read += 2
+
+	packetID, err := strconv.ParseInt(hex.EncodeToString(header[read:read+2]), 16, 64)
+	if err != nil {
+		return nil, err
+	}
+	read += 3
+
+	avlPacketID, err := strconv.ParseInt(hex.EncodeToString(header[read:read+1]), 16, 64)
+	if err != nil {
+		return nil, err
+	}
+	read += 1
+
+	imeiLength, err := strconv.ParseInt(hex.EncodeToString(header[read:read+2]), 16, 64)
+	if err != nil {
+		return nil, err
+	}
+	read += 2
+
+	hexImei := hex.EncodeToString(header[read : read+int(imeiLength)])
+	bytesImei, _ := hex.DecodeString(hexImei)
+	imei := string(bytesImei)
+
+	read += int(imeiLength)
+
+	data := &HeaderDataUDP{
+		Length:      length,
+		PacketID:    packetID,
+		AVLPacketID: avlPacketID,
+		IMEILength:  imeiLength,
+		IMEI:        imei,
+		LastByte:    read,
+	}
+
+	return data, nil
+}
+
+func isLogin(tram []byte) (bool, error) {
+	if len(tram) < 2 {
+		return false, fmt.Errorf("tram is too small")
+	}
+
+	length, err := strconv.ParseInt(hex.EncodeToString(tram[:2]), 16, 64)
+	if err != nil {
+		return false, err
+	}
+
+	if length == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func login(tram []byte) (*LoginData, error) {
+	read := 0
+	valid, err := isLogin(tram)
+	if err != nil {
+		return nil, err
+	}
+
+	if !valid {
+		return nil, fmt.Errorf("login message is not valid")
+	}
+
+	length, err := strconv.ParseInt(hex.EncodeToString(tram[read:read+2]), 16, 64)
+	if err != nil {
+		return nil, err
+	}
+	read += 2
+
+	hexImei := hex.EncodeToString(tram[read:])
+	bytesImei, _ := hex.DecodeString(hexImei)
+	imei := string(bytesImei)
+
+	return &LoginData{Length: length, IMEI: imei}, nil
+}
+
+func getProtocol(header []byte) (*ProtocolData, error) {
+	if len(header) < 4 {
+		return nil, fmt.Errorf("header is too small")
+	}
+
+	if hex.EncodeToString(header[:4]) == "00000000" {
+		return &ProtocolData{Protocol: "TCP"}, nil
+	}
+
+	return &ProtocolData{Protocol: "UDP"}, nil
+}
+
+func decodeHeader(header []byte) (*HeaderData, error) {
+	protocolData, err := getProtocol(header)
+	if err != nil {
+		return nil, err
+	}
+
+	if protocolData.Protocol == "UDP" {
+		decodedUDPHeader, err := decodeHeaderUDP(header)
+		if err != nil {
+			return nil, err
+		}
+
+		headerData := &HeaderData{
+			HeaderTCP: nil,
+			HeaderUDP: decodedUDPHeader,
+			Protocol:  protocolData.Protocol,
+			LastByte:  decodedUDPHeader.LastByte,
+		}
+
+		return headerData, nil
+	} else if protocolData.Protocol == "TCP" {
+		decodedTCPHeader, err := decodeHeaderTCP(header)
+		if err != nil {
+			return nil, err
+		}
+
+		headerData := &HeaderData{
+			HeaderTCP: decodedTCPHeader,
+			HeaderUDP: nil,
+			Protocol:  protocolData.Protocol,
+			LastByte:  decodedTCPHeader.LastByte,
+		}
+
+		return headerData, nil
+	}
+
+	headerData := &HeaderData{
+		HeaderTCP: nil,
+		HeaderUDP: nil,
+		Protocol:  "Unknown",
+		LastByte:  0,
+	}
+
+	return headerData, nil
 }

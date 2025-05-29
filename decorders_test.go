@@ -7,20 +7,50 @@ import (
 
 func TestDecodeCodec8(t *testing.T) {
 	tests := []struct {
-		name       string
-		data       []byte
-		dataLength int64
-		wantErr    bool
+		name     string
+		data     []byte
+		protocol string
+		wantErr  bool
 	}{
 		{
-			name: "Valid Codec8 data",
+			name: "Valid Codec8 data (1 byte, 2 bytes, 4 bytes, 8 bytes)",
 			data: func() []byte {
 				hexStr := "010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000010000C7CF" // Mock valid data
 				data, _ := hex.DecodeString(hexStr)
 				return data
 			}(),
-			dataLength: 53,
-			wantErr:    false,
+			protocol: "TCP",
+			wantErr:  false,
+		},
+		{
+			name: "Valid Codec8 data (1 byte, 2 bytes)",
+			data: func() []byte {
+				hexStr := "010000016B40D9AD80010000000000000000000000000000000103021503010101425E100000010000F22A" // Mock valid data
+				data, _ := hex.DecodeString(hexStr)
+				return data
+			}(),
+			protocol: "TCP",
+			wantErr:  false,
+		},
+		{
+			name: "Valid Codec8 data (2 records)",
+			data: func() []byte {
+				hexStr := "020000016B40D57B480100000000000000000000000000000001010101000000000000016B40D5C198010000000000000000000000000000000101010101000000020000252C" // Mock valid data
+				data, _ := hex.DecodeString(hexStr)
+				return data
+			}(),
+			protocol: "TCP",
+			wantErr:  false,
+		},
+		{
+			name: "Valid Codec8 data (UDP protocol)",
+			data: func() []byte {
+				hexStr := "010000016B4F815B30010000000000000000000000000000000103021503010101425DBC000001" // Mock valid data
+				data, _ := hex.DecodeString(hexStr)
+				return data
+			}(),
+			protocol: "UDP",
+			wantErr:  false,
 		},
 		{
 			name: "Short Data Error",
@@ -29,14 +59,14 @@ func TestDecodeCodec8(t *testing.T) {
 				data, _ := hex.DecodeString(hexStr)
 				return data
 			}(),
-			dataLength: 4,
-			wantErr:    true,
+			protocol: "TCP",
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := decodeCodec8(tt.data, tt.dataLength)
+			_, err := decodeCodec8(tt.data, tt.protocol)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("decodeCodec8() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -46,10 +76,10 @@ func TestDecodeCodec8(t *testing.T) {
 
 func TestDecodeCodec8Ext(t *testing.T) {
 	tests := []struct {
-		name       string
-		data       []byte
-		dataLength int64
-		wantErr    bool
+		name     string
+		data     []byte
+		protocol string
+		wantErr  bool
 	}{
 		{
 			name: "Valid Codec8 Extended data",
@@ -58,8 +88,18 @@ func TestDecodeCodec8Ext(t *testing.T) {
 				data, _ := hex.DecodeString(hexStr)
 				return data
 			}(),
-			dataLength: 73,
-			wantErr:    false,
+			protocol: "TCP",
+			wantErr:  false,
+		},
+		{
+			name: "Valid Codec8 Extended data UDP",
+			data: func() []byte {
+				hexStr := "010000016B4F831C680100000000000000000000000000000000010005000100010100010011009D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A000001" // Mock valid data
+				data, _ := hex.DecodeString(hexStr)
+				return data
+			}(),
+			protocol: "UDP",
+			wantErr:  false,
 		},
 		{
 			name: "Short Data Error",
@@ -68,14 +108,14 @@ func TestDecodeCodec8Ext(t *testing.T) {
 				data, _ := hex.DecodeString(hexStr)
 				return data
 			}(),
-			dataLength: 4,
-			wantErr:    true,
+			protocol: "TCP",
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := decodeCodec8Ext(tt.data, tt.dataLength)
+			_, err := decodeCodec8Ext(tt.data, tt.protocol)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("decodeCodec8Ext() error = %v, wantErr %v", err, tt.wantErr)
 			}
