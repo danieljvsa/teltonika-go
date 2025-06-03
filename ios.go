@@ -1,4 +1,4 @@
-package main
+package teltonicaGo
 
 import (
 	"encoding/hex"
@@ -253,4 +253,3 @@ func decodeIos8Extended(data []byte, startByte int64) (*ResponseDecode, error) {
 
 	return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number, LastByte: byte}, nil
 }
-

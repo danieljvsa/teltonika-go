@@ -1,4 +1,4 @@
-package main
+package teltonicaGo
 
 import (
 	"encoding/hex"
@@ -67,7 +67,7 @@ func TestRouterDecoder(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid test input: %v", err)
 			}
-			res := RouterDecoder(data)
+			res := TramDecoder(data)
 			if res.Error != nil {
 				t.Fatalf("invalid internal test input: %v", res.Error)
 			}
