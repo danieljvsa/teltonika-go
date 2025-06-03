@@ -1,4 +1,4 @@
-package main
+package teltonicaGo
 
 import (
 	"encoding/binary"
