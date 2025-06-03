@@ -1,148 +1,103 @@
-# Teltonika TCP/UDP Server
+# Teltonika Go Parser
 
-## Overview
+A lightweight Go library to decode and work with binary data from **Teltonika GPS devices**, including login and AVL data packets (Codecs 08, 8E, etc.).
 
-This project presents a **TCP and UDP server** developed in Go, specifically designed for interfacing with **Teltonika GPS devices**. The server facilitates bidirectional communication by accepting incoming connections, parsing data packets in accordance with Teltonika's proprietary protocol, processing the extracted information, and formulating appropriate responses.
+---
 
-## Key Features
+## 📦 Version
 
-- Supports **TCP (8080)** and **UDP (9090)** network communication protocols.
-- Integrates seamlessly with **Teltonika GPS trackers**.
-- Implements **packet decoding and encoding** based on the [Teltonika Data Sending Protocols](https://wiki.teltonika-gps.com/view/Teltonika_Data_Sending_Protocols).
-- Easily deployable via **Docker** and **Docker Compose**.
-- Includes a **client utility** to send test messages to both TCP and UDP servers.
+**v0.1.0**
 
-## Project Structure
+---
+
+## ✨ Features
+
+- Decode login packets  
+- Parse AVL records using Codecs 08 and 8E  
+- Validate and interpret Teltonika TCP/UDP headers  
+- Graceful error handling with structured responses  
+- Minimal dependencies, pure Go
+
+---
+
+## 🏗️ Project Structure
 
 ```
-my-go-server/
-│── main.go               # Core server logic implemented in Go
-│── client.go             # Client implementation for testing TCP/UDP communication
-│── Dockerfile            # Configuration for Docker containerization
-│── docker-compose.yml    # Definition file for Docker Compose
-│── README.md             # Documentation and setup guide
-│── go.mod                # Go module configuration
-│── go.sum                # Dependency checksum tracking
+├── main.go              # Core decoder logic (entry point)
+├── decoders.go          # Codec 08/8E parsing
+├── encoders.go          # Placeholder for encoding support
+├── ios.go               # I/O element parsing
+├── router.go            # TCP connection routing
+├── tools.go             # Utility functions
+├── *_test.go            # Unit tests
 ```
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
-### Prerequisites
+### Requirements
 
-Before proceeding with the installation, ensure the following dependencies are installed on your system:
+- Go 1.20+
+- Teltonika GPS device (e.g., FMB920, FMM125)
 
-- [Go](https://go.dev/dl/) (latest stable version recommended)
-- [Docker](https://www.docker.com/get-started)
-- [Docker Compose](https://docs.docker.com/compose/install/)
+### Installation
 
-### Installation Steps
-
-#### 1. Clone the Repository
-
-```sh
-git clone https://github.com/yourusername/my-go-server.git
-cd my-go-server
-```
-
-#### 2. Install Required Dependencies
-
-```sh
-go mod tidy
-```
-
-#### 3. Launch the Server
-
-**Run the server locally:**
-
-```sh
-go run main.go
-```
-
-**Alternatively, run the server in a Docker container:**
-
-```sh
-docker-compose up --build
+```bash
+go get github.com/danieljvsa/teltonika-go
 ```
 
 ---
 
-## Testing the Server
+## 📄 Example Usage
 
-### Verifying TCP Communication
+```go
+package main
 
-To test TCP connectivity, use **netcat**, a Teltonika GPS tracker, or the provided client:
+import (
+	"fmt"
+	tg "github.com/danieljvsa/teltonika-go"
+)
 
-```sh
-nc -v localhost 8080
-```
+func main() {
+	// Replace with actual Teltonika login and AVL packet bytes
+	rawLogin := []byte{ /* login packet */ }
+	rawTram := []byte{ /* AVL packet */ }
 
-Alternatively, use the test client:
+	// Decode login packet
+	login := tg.LoginDecoder(rawLogin)
+	if login.Error != nil {
+		fmt.Println("Login decode error:", login.Error)
+	} else {
+		fmt.Printf("Login decoded: %+v\n", login.Response)
+	}
 
-```sh
-go run client.go -protocol tcp -message "Hello TCP Server" -host localhost -port 8080
-```
-
-### Verifying UDP Communication
-
-To test UDP functionality, execute the following command:
-
-```sh
-echo -n "Hello UDP" | nc -u -w1 localhost 9090
-```
-
-Or use the test client:
-
-```sh
-go run client.go -protocol udp -message "Hello UDP Server" -host localhost -port 9090
+	// Decode AVL/tram packet
+	tram := tg.TramDecoder(rawTram)
+	if tram.Error != nil {
+		fmt.Println("Tram decode error:", tram.Error)
+	} else {
+		fmt.Printf("Tram decoded: %+v\n", tram.Response)
+	}
+}
 ```
 
 ---
 
-## Teltonika Data Processing
+## 📄 License
 
-This server is engineered to process **Teltonika AVL (Automatic Vehicle Location) data packets**, as defined in the [Teltonika Protocol](https://wiki.teltonika-gps.com/view/Teltonika_Data_Sending_Protocols). It performs the following operations:
-
-- **Decodes AVL packets** received from Teltonika tracking devices.
-- **Extracts and processes** GPS and IO (input/output) telemetry data.
-- **Encodes and transmits acknowledgments** back to the originating device to confirm receipt of data.
-
-### Data Flow Example
-
-1. **A Teltonika device establishes a connection** via TCP or UDP.
-2. **The server captures and reads the AVL data packet**.
-3. **The server decodes and processes GPS and telemetry data**.
-4. **An acknowledgment response is transmitted back to the device**.
+[MIT License](LICENSE)
 
 ---
 
-## Deployment Instructions
+## 🤝 Contributing
 
-To deploy the server using Docker in a production environment, execute:
-
-```sh
-docker-compose up -d
-```
-
-This command initializes the server in detached mode, ensuring continuous operation in the background.
+Contributions, issues, and suggestions are welcome.  
+Please fork the repo and submit a pull request or open an issue.
 
 ---
 
-## Contributing to the Project
+## 👤 Author
 
-We welcome contributions! If you would like to improve the server's functionality, particularly in handling Teltonika-specific data structures, feel free to submit **issues** or **pull requests**.
-
----
-
-## License
-
-This project is distributed under the **MIT License**.
-
----
-
-## References
-
-- [Teltonika Data Sending Protocols](https://wiki.teltonika-gps.com/view/Teltonika_Data_Sending_Protocols)
-- [Go net package documentation](https://pkg.go.dev/net)
-
+**Daniel Sá**  
+[github.com/danieljvsa](https://github.com/danieljvsa)

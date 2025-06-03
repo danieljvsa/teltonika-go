@@ -1,76 +1,85 @@
-package main
+package teltonicaGo
 
 import (
+	"encoding/hex"
 	"fmt"
-	"net"
-	"os"
 )
 
-func main() {
-	// Start TCP server in a goroutine
-	go startTCPServer()
-
-	// Start UDP server in a goroutine
-	go startUDPServer()
-
-	// Keep the main function running
-	select {}
+type CodecDecoded struct {
+	Response *ResponseType
+	Error    error
 }
 
-func startTCPServer() {
-	listener, err := net.Listen("tcp", ":8080")
-	if err != nil {
-		fmt.Println("Error starting TCP server:", err)
-		os.Exit(1)
-	}
-	defer listener.Close()
-	fmt.Println("TCP server listening on port 8080")
+type ResponseType struct {
+	Type   string
+	Result any
+}
 
-	for {
-		conn, err := listener.Accept()
+type CodecHeaderResponse struct {
+	CodecData  *CodecData
+	HeaderData *HeaderData
+}
+
+func LoginDecoder(request []byte) *CodecDecoded {
+	isLogin, err := isLogin(request)
+	if err != nil {
+		return &CodecDecoded{Response: nil, Error: err}
+	}
+
+	if isLogin {
+		login, err := login(request)
 		if err != nil {
-			fmt.Println("TCP Accept error:", err)
-			continue
+			return &CodecDecoded{Response: nil, Error: err}
 		}
-		go handleTCPConnection(conn)
+		fmt.Println("Decoded (Login):", login)
+		res := &ResponseType{Result: login, Type: "Login"}
+		return &CodecDecoded{Response: res, Error: err}
 	}
+
+	return &CodecDecoded{Response: nil, Error: fmt.Errorf("login is not valid")}
 }
 
-func handleTCPConnection(conn net.Conn) {
-	defer conn.Close()
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
+func TramDecoder(request []byte) *CodecDecoded {
+	read := 0
+
+	headerData, err := decodeHeader(request)
 	if err != nil {
-		fmt.Println("TCP Read error:", err)
-		return
+		return &CodecDecoded{Response: nil, Error: err}
 	}
-	fmt.Printf("Received TCP message: %s\n", string(buf[:n]))
-	RouterDecoder(buf[:n])
-	conn.Write([]byte("TCP message received\n"))
+
+	read += headerData.LastByte
+	codec := hex.EncodeToString(request[read : read+1])
+
+	read += 1
+	data := request[read:]
+	response := &ResponseType{Result: "Codec not supported", Type: "Tram"}
+	switch string(codec) {
+	case "08":
+		res, err := decodeCodec8(data, headerData.Protocol)
+		response.Result = &CodecHeaderResponse{CodecData: res, HeaderData: headerData}
+		fmt.Println("Decoded (res): ", res)
+		fmt.Println("Decoded (headerData): ", headerData, headerData.HeaderTCP, headerData.HeaderUDP)
+		return &CodecDecoded{Response: response, Error: err}
+	case "8e":
+		res, err := decodeCodec8Ext(data, headerData.Protocol)
+		response.Result = &CodecHeaderResponse{CodecData: res, HeaderData: headerData}
+		fmt.Println("Decoded (res): ", res)
+		fmt.Println("Decoded (headerData): ", headerData, headerData.HeaderTCP, headerData.HeaderUDP)
+		return &CodecDecoded{Response: response, Error: err}
+	case "0C":
+		return &CodecDecoded{Response: response, Error: err}
+	case "0D":
+		return &CodecDecoded{Response: response, Error: err}
+	case "0E":
+		return &CodecDecoded{Response: response, Error: err}
+	case "0F":
+		return &CodecDecoded{Response: response, Error: err}
+	case "10":
+		return &CodecDecoded{Response: response, Error: err}
+	default:
+		return &CodecDecoded{Response: response, Error: fmt.Errorf("unknown codec: %s", codec)}
+	}
 
 }
 
-func startUDPServer() {
-	addr := net.UDPAddr{
-		Port: 9090,
-		IP:   net.ParseIP("0.0.0.0"),
-	}
-	conn, err := net.ListenUDP("udp", &addr)
-	if err != nil {
-		fmt.Println("Error starting UDP server:", err)
-		os.Exit(1)
-	}
-	defer conn.Close()
-	fmt.Println("UDP server listening on port 9090")
-
-	for {
-		buf := make([]byte, 1024)
-		n, clientAddr, err := conn.ReadFromUDP(buf)
-		if err != nil {
-			fmt.Println("UDP Read error:", err)
-			continue
-		}
-		fmt.Printf("Received UDP message: %s from %s\n", string(buf[:n]), clientAddr)
-		conn.WriteToUDP([]byte("UDP message received\n"), clientAddr)
-	}
-}
+func TramEncoder(request []byte) {}

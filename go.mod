@@ -1,3 +1,3 @@
-module github.com/danieljvsa/geolocation_server
+module github.com/danieljvsa/teltonika-go
 
 go 1.22.5

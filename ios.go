@@ -1,4 +1,4 @@
-package main
+package teltonicaGo
 
 import (
 	"encoding/hex"
@@ -14,16 +14,15 @@ type IOData struct {
 type ResponseDecode struct {
 	IOs         []IOData
 	NumberOfIOs int64
+	LastByte    int64
 }
 
-func decodeIos(data []byte, dataLength int64, startByte int64) (*ResponseDecode, error) {
+func decodeIos(data []byte, startByte int64) (*ResponseDecode, error) {
 	ios_data := []IOData{}
-	if int(dataLength) < 4 {
-		return &ResponseDecode{IOs: ios_data, NumberOfIOs: 0}, nil
+	if len(data) < 4 {
+		return &ResponseDecode{IOs: ios_data, NumberOfIOs: 0, LastByte: 0}, nil
 	}
-	if int(dataLength) != len(data) {
-		return nil, fmt.Errorf("Invalid data length %d", len(data))
-	}
+
 	ios_read := 0
 	byte := startByte
 	ios_number, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
@@ -54,17 +53,13 @@ func decodeIos(data []byte, dataLength int64, startByte int64) (*ResponseDecode,
 		ios_read += 1
 	}
 
-	if ios_read >= int(ios_number) {
-		return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number}, nil
-	}
-
 	number_ios_two_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
 	if err != nil {
 		fmt.Println("Error parsing id of ios two-byte:", err)
 		return nil, err
 	}
 	byte += 1
-	for i := 0; i < int(number_ios_two_byte); i++ {
+	for range int(number_ios_two_byte) {
 		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
 		if err != nil {
 			fmt.Println("Error parsing value of ios two-byte:", err)
@@ -79,9 +74,9 @@ func decodeIos(data []byte, dataLength int64, startByte int64) (*ResponseDecode,
 		ios_read += 1
 	}
 
-	if ios_read >= int(ios_number) {
-		return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number}, nil
-	}
+	// if ios_read >= int(ios_number) {
+	// 	return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number, LastByte: byte}, nil
+	// }
 
 	number_ios_four_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
 	if err != nil {
@@ -102,10 +97,6 @@ func decodeIos(data []byte, dataLength int64, startByte int64) (*ResponseDecode,
 		io := IOData{IO: id, Value: value}
 		ios_data = append(ios_data, io)
 		ios_read += 1
-	}
-
-	if ios_read >= int(ios_number) {
-		return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number}, nil
 	}
 
 	number_ios_eight_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
@@ -129,17 +120,15 @@ func decodeIos(data []byte, dataLength int64, startByte int64) (*ResponseDecode,
 		ios_read += 1
 	}
 
-	return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number}, nil
+	return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number, LastByte: byte}, nil
 }
 
-func decodeIos8Extended(data []byte, dataLength int64, startByte int64) (*ResponseDecode, error) {
+func decodeIos8Extended(data []byte, startByte int64) (*ResponseDecode, error) {
 	ios_data := []IOData{}
-	if int(dataLength) < 4 {
+	if len(data) < 4 {
 		return &ResponseDecode{IOs: ios_data, NumberOfIOs: 0}, nil
 	}
-	if int(dataLength) != len(data) {
-		return nil, fmt.Errorf("Invalid data length %d", len(data))
-	}
+
 	ios_read := 0
 	byte := startByte
 	ios_number, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
@@ -170,10 +159,6 @@ func decodeIos8Extended(data []byte, dataLength int64, startByte int64) (*Respon
 		ios_read += 1
 	}
 
-	if ios_read >= int(ios_number) {
-		return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number}, nil
-	}
-
 	number_ios_two_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
 	if err != nil {
 		fmt.Println("Error parsing id of ios two-byte:", err)
@@ -193,10 +178,6 @@ func decodeIos8Extended(data []byte, dataLength int64, startByte int64) (*Respon
 		io := IOData{IO: id, Value: value}
 		ios_data = append(ios_data, io)
 		ios_read += 1
-	}
-
-	if ios_read >= int(ios_number) {
-		return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number}, nil
 	}
 
 	number_ios_four_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
@@ -220,10 +201,6 @@ func decodeIos8Extended(data []byte, dataLength int64, startByte int64) (*Respon
 		ios_read += 1
 	}
 
-	if ios_read >= int(ios_number) {
-		return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number}, nil
-	}
-
 	number_ios_eight_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
 	if err != nil {
 		fmt.Println("Error parsing id of ios two-byte:", err)
@@ -243,10 +220,6 @@ func decodeIos8Extended(data []byte, dataLength int64, startByte int64) (*Respon
 		io := IOData{IO: id, Value: value}
 		ios_data = append(ios_data, io)
 		ios_read += 1
-	}
-
-	if ios_read >= int(ios_number) {
-		return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number}, nil
 	}
 
 	number_ios_x_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
@@ -278,5 +251,5 @@ func decodeIos8Extended(data []byte, dataLength int64, startByte int64) (*Respon
 		ios_read += 1
 	}
 
-	return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number}, nil
+	return &ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number, LastByte: byte}, nil
 }
