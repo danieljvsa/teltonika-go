@@ -1,8 +1,10 @@
-package teltonicaGo
+package teltonika_go_test
 
 import (
 	"encoding/hex"
 	"testing"
+
+	pkg "github.com/danieljvsa/teltonika-go/pkg"
 )
 
 func TestDecodeCodec8(t *testing.T) {
@@ -66,7 +68,7 @@ func TestDecodeCodec8(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := decodeCodec8(tt.data, tt.protocol)
+			_, err := pkg.DecodeCodec8(tt.data, tt.protocol)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("decodeCodec8() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -115,7 +117,7 @@ func TestDecodeCodec8Ext(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := decodeCodec8Ext(tt.data, tt.protocol)
+			_, err := pkg.DecodeCodec8Ext(tt.data, tt.protocol)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("decodeCodec8Ext() error = %v, wantErr %v", err, tt.wantErr)
 			}
