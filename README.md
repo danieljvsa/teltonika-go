@@ -1,12 +1,13 @@
 # Teltonika Go Parser
 
 A lightweight Go library to decode and work with binary data from **Teltonika GPS devices**, including login and AVL data packets (Codecs 08, 8E, etc.).
+This version uses a clean, idiomatic Go project layout to separate concerns between command-line usage, internal logic, and reusable packages.
 
 ---
 
 ## 📦 Version
 
-**v0.1.0**
+**v0.2.0**
 
 ---
 
@@ -20,16 +21,54 @@ A lightweight Go library to decode and work with binary data from **Teltonika GP
 
 ---
 
+## 🆕 Changes Introduced
+
+- 🔀 Restructured code using Go’s standard project layout  
+- 🧩 Moved CLI entry to `cmd/teltonika_go/`  
+- 🧱 Segregated internal logic under `internal/` by domain  
+- 📦 Created `pkg/` as a clean public API  
+- 🧪 Centralized test files in the `test/` directory  
+- 🛠 Added `Makefile` for common tasks  
+
+---
+
 ## 🏗️ Project Structure
 
 ```
-├── main.go              # Core decoder logic (entry point)
-├── decoders.go          # Codec 08/8E parsing
-├── encoders.go          # Placeholder for encoding support
-├── ios.go               # I/O element parsing
-├── router.go            # TCP connection routing
-├── tools.go             # Utility functions
-├── *_test.go            # Unit tests
+├── go.mod              # Go module file
+├── LICENSE             # License (MIT)
+├── Makefile            # Automation tasks
+├── README.md           # Project documentation
+├── cmd/
+│   └── teltonika_go/
+│       └── main.go     # CLI entry point
+├── internal/           # Internal logic (not imported externally)
+│   ├── decoder/
+│   │   └── models.go   # Decoding-related structs
+│   ├── encoder/
+│   │   └── models.go   # Encoding logic structs
+│   ├── header/
+│   │   └── models.go   # AVL header model
+│   ├── io/
+│   │   └── models.go   # I/O element models
+│   └── tool/
+│       └── models.go   # Utility data types
+├── pkg/                # Public API surface
+│   ├── decoders.go
+│   ├── encoders.go
+│   ├── headers.go
+│   └── ios.go
+├── test/               # Test suite
+│   ├── decorders_test.go
+│   ├── ios_test.go
+│   ├── main_test.go
+│   └── tools_test.go
+└── tools/              # Teltonika protocol utilities
+    ├── crc16.go
+    ├── gps.go
+    ├── login.go
+    ├── protocol.go
+    └── timestamp.go
 ```
 
 ---
