@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	tg "github.com/danieljvsa/teltonika-go/cmd/teltonika_go"
+	tg "github.com/danieljvsa/teltonika-go/cmd/teltonika-go"
 )
 
 func TestLoginDecoder(t *testing.T) {
