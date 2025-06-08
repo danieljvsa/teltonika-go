@@ -1,4 +1,4 @@
-package teltonicaGo
+package teltonika_go
 
 func encodeCodec8(data []byte, dataLength int64)    {}
 func encodeCodec8Ext(data []byte, dataLength int64) {}

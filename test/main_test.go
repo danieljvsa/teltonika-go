@@ -1,9 +1,10 @@
-package teltonicaGo
+package teltonika_go_test
 
 import (
 	"encoding/hex"
-	"fmt"
 	"testing"
+
+	tg "github.com/danieljvsa/teltonika-go/cmd/teltonika_go"
 )
 
 func TestLoginDecoder(t *testing.T) {
@@ -24,16 +25,15 @@ func TestLoginDecoder(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid test input: %v", err)
 			}
-			res := LoginDecoder(data)
+			res := tg.LoginDecoder(data)
 			if res.Error != nil {
 				t.Fatalf("invalid internal test input: %v", res.Error)
 			}
-			fmt.Println("Response:", res.Response)
 		})
 	}
 }
 
-func TestRouterDecoder(t *testing.T) {
+func TestTramDecoder(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string // hex string
@@ -67,11 +67,10 @@ func TestRouterDecoder(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid test input: %v", err)
 			}
-			res := TramDecoder(data)
+			res := tg.TramDecoder(data)
 			if res.Error != nil {
 				t.Fatalf("invalid internal test input: %v", res.Error)
 			}
-			fmt.Println("Response:", res.Response)
 		})
 	}
 }
