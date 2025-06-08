@@ -1,17 +1,19 @@
-package teltonicaGo
+package teltonika_go_test
 
 import (
 	"encoding/hex"
 	"strconv"
 	"testing"
 	"time"
+
+	tools "github.com/danieljvsa/teltonika-go/tools"
 )
 
 func TestDecodeGPSData(t *testing.T) {
 	// Example valid data (hex representation of values)
 	data, _ := hex.DecodeString("F0A9AFC0209CCA800123456789ab")
 
-	gps, err := DecodeGPSData(data)
+	gps, err := tools.DecodeGPSData(data)
 	if err != nil {
 		t.Fatal("Expected valid GPSData, got nil")
 	}
@@ -63,7 +65,7 @@ func TestCalcTimestamp(t *testing.T) {
 	expectedTime := time.UnixMilli(1560161086000).UTC()
 
 	// Call function
-	result, err := CalcTimestamp(data)
+	result, err := tools.CalcTimestamp(data)
 	if err != nil {
 		t.Fatal("Expected valid time, got nil")
 	}
