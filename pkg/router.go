@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	decoder_domain "github.com/danieljvsa/teltonika-go/internal/decoder"
-	pkg "github.com/danieljvsa/teltonika-go/pkg"
 	tools "github.com/danieljvsa/teltonika-go/tools"
 )
 
@@ -30,7 +29,7 @@ func LoginDecoder(request []byte) *decoder_domain.CodecDecoded {
 func TramDecoder(request []byte) *decoder_domain.CodecDecoded {
 	read := 0
 
-	headerData, err := pkg.DecodeHeader(request)
+	headerData, err := DecodeHeader(request)
 	if err != nil {
 		return &decoder_domain.CodecDecoded{Response: nil, Error: err}
 	}
@@ -43,11 +42,11 @@ func TramDecoder(request []byte) *decoder_domain.CodecDecoded {
 	response := &decoder_domain.ResponseType{Result: "Codec not supported", Type: "Tram"}
 	switch string(codec) {
 	case "08":
-		res, err := pkg.DecodeCodec8(data, headerData.Protocol)
+		res, err := DecodeCodec8(data, headerData.Protocol)
 		response.Result = &decoder_domain.CodecHeaderResponse{CodecData: res, HeaderData: headerData}
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
 	case "8e":
-		res, err := pkg.DecodeCodec8Ext(data, headerData.Protocol)
+		res, err := DecodeCodec8Ext(data, headerData.Protocol)
 		response.Result = &decoder_domain.CodecHeaderResponse{CodecData: res, HeaderData: headerData}
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
 	case "0C":

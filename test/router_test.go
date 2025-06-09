@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	tg "github.com/danieljvsa/teltonika-go/cmd/teltonika-go"
+	pkg "github.com/danieljvsa/teltonika-go/pkg"
 )
 
 func TestLoginDecoder(t *testing.T) {
@@ -25,7 +25,7 @@ func TestLoginDecoder(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid test input: %v", err)
 			}
-			res := tg.LoginDecoder(data)
+			res := pkg.LoginDecoder(data)
 			if res.Error != nil {
 				t.Fatalf("invalid internal test input: %v", res.Error)
 			}
@@ -67,7 +67,7 @@ func TestTramDecoder(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid test input: %v", err)
 			}
-			res := tg.TramDecoder(data)
+			res := pkg.TramDecoder(data)
 			if res.Error != nil {
 				t.Fatalf("invalid internal test input: %v", res.Error)
 			}
