@@ -96,7 +96,7 @@ package main
 
 import (
 	"fmt"
-	tg "github.com/danieljvsa/teltonika-go"
+	tg "github.com/danieljvsa/teltonika-go/pkg"
 )
 
 func main() {
