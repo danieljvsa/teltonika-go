@@ -7,7 +7,7 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 
 ## 📦 Version
 
-**v0.2.0**
+**v0.2.2**
 
 ---
 
@@ -29,6 +29,7 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 - 📦 Created `pkg/` as a clean public API  
 - 🧪 Centralized test files in the `test/` directory  
 - 🛠 Added `Makefile` for common tasks  
+- 🔀 Fix to errors appearing when importing library
 
 ---
 
