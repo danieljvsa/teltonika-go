@@ -6,7 +6,8 @@ type IOData struct {
 }
 
 type ResponseDecode struct {
-	IOs         []IOData
-	NumberOfIOs int64
-	LastByte    int64
+	IOs            []IOData
+	NumberOfIOs    int64
+	LastByte       int64
+	GenerationType string
 }

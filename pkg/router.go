@@ -52,12 +52,16 @@ func TramDecoder(request []byte) *decoder_domain.CodecDecoded {
 	case "0C":
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
 	case "0D":
+		//Codec that only serves to send commands to device
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
 	case "0E":
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
 	case "0F":
+		//Codec that only serves to send commands to device
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
 	case "10":
+		res, err := DecodeCodec16(data, headerData.Protocol)
+		response.Result = &decoder_domain.CodecHeaderResponse{CodecData: res, HeaderData: headerData}
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
 	default:
 		return &decoder_domain.CodecDecoded{Response: response, Error: fmt.Errorf("unknown codec: %s", codec)}
