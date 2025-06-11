@@ -124,3 +124,52 @@ func TestDecodeCodec8Ext(t *testing.T) {
 		})
 	}
 }
+
+func TestDecodeCodec16(t *testing.T) {
+	tests := []struct {
+		name     string
+		data     []byte
+		protocol string
+		wantErr  bool
+	}{
+		{
+			name: "Valid Codec16 TCP",
+			data: func() []byte {
+				hexStr := "020000016BDBC7833000000000000000000000000000000000000B05040200010000030002000B00270042563A00000000016BDBC7871800000000000000000000000000000000000B05040200010000030002000B00260042563A00000200005FB3" // Mock valid data
+				data, _ := hex.DecodeString(hexStr)
+				return data
+			}(),
+			protocol: "TCP",
+			wantErr:  false,
+		},
+		{
+			name: "Valid Codec16 UDP",
+			data: func() []byte {
+				hexStr := "010000015117E40FE80000000000000000000000000000000000EF05050400010000030000B40000EF01010042111A000001" // Mock valid data
+				data, _ := hex.DecodeString(hexStr)
+				return data
+			}(),
+			protocol: "UDP",
+			wantErr:  false,
+		},
+		{
+			name: "Short Data Error",
+			data: func() []byte {
+				hexStr := "01000000" // Too short to be valid
+				data, _ := hex.DecodeString(hexStr)
+				return data
+			}(),
+			protocol: "TCP",
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := pkg.DecodeCodec16(tt.data, tt.protocol)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("decodeCodec16() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
