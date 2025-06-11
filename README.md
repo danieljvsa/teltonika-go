@@ -7,14 +7,14 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 
 ## 📦 Version
 
-**v0.2.2**
+**v0.3.0**
 
 ---
 
 ## ✨ Features
 
 - Decode login packets  
-- Parse AVL records using Codecs 08 and 8E  
+- Parse AVL records using Codecs 08, 8E and 16  
 - Validate and interpret Teltonika TCP/UDP headers  
 - Graceful error handling with structured responses  
 - Minimal dependencies, pure Go
@@ -23,13 +23,8 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 
 ## 🆕 Changes Introduced
 
-- 🔀 Restructured code using Go’s standard project layout  
-- 🧩 Moved CLI entry to `cmd/teltonika_go/`  
-- 🧱 Segregated internal logic under `internal/` by domain  
-- 📦 Created `pkg/` as a clean public API  
-- 🧪 Centralized test files in the `test/` directory  
-- 🛠 Added `Makefile` for common tasks  
-- 🔀 Fix to errors appearing when importing library
+- 🎧 Added support for decoding with Codec 16  
+- 🧬 Updated internal types to support `generation_type` type workflows
 
 ---
 
@@ -96,7 +91,8 @@ package main
 
 import (
 	"fmt"
-	tg "github.com/danieljvsa/teltonika-go/pkg"
+	pkg "github.com/danieljvsa/teltonika-go/pkg" // For general functions
+	tools "github.com/danieljvsa/teltonika-go/tools" // For general functions
 )
 
 func main() {
@@ -105,7 +101,7 @@ func main() {
 	rawTram := []byte{ /* AVL packet */ }
 
 	// Decode login packet
-	login := tg.LoginDecoder(rawLogin)
+	login := pkg.LoginDecoder(rawLogin)
 	if login.Error != nil {
 		fmt.Println("Login decode error:", login.Error)
 	} else {
@@ -113,7 +109,7 @@ func main() {
 	}
 
 	// Decode AVL/tram packet
-	tram := tg.TramDecoder(rawTram)
+	tram := pkg.TramDecoder(rawTram)
 	if tram.Error != nil {
 		fmt.Println("Tram decode error:", tram.Error)
 	} else {

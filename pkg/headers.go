@@ -75,7 +75,6 @@ func DecodeHeaderUDP(header []byte) (*header_domain.HeaderDataUDP, error) {
 		IMEI:        imei,
 		LastByte:    read,
 	}
-
 	return data, nil
 }
 

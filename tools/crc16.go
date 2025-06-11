@@ -1,6 +1,8 @@
 package tools
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+)
 
 func Crc16IBM(data []byte) uint16 {
 	var crc uint16 = 0x0000
