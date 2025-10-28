@@ -17,3 +17,10 @@ type LoginData struct {
 type ProtocolData struct {
 	Protocol string
 }
+
+type CommandResponse struct {
+	Response    string
+	HexMessage  string
+	CommandType string
+	IMEI        string
+}

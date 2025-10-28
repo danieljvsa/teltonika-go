@@ -19,7 +19,7 @@ func LoginDecoder(request []byte) *decoder_domain.CodecDecoded {
 		if err != nil {
 			return &decoder_domain.CodecDecoded{Response: nil, Error: err}
 		}
-		res := &decoder_domain.ResponseType{Result: login, Type: "Login"}
+		res := &decoder_domain.ResponseType{Result: *login, Type: "Login"}
 		return &decoder_domain.CodecDecoded{Response: res, Error: err}
 	}
 
@@ -39,29 +39,35 @@ func TramDecoder(request []byte) *decoder_domain.CodecDecoded {
 
 	read += 1
 	data := request[read:]
-	response := &decoder_domain.ResponseType{Result: "Codec not supported", Type: "Tram"}
+	response := &decoder_domain.ResponseType{Result: decoder_domain.CodecHeaderResponse{}, Type: "Tram"}
 	switch string(codec) {
 	case "08":
 		res, err := DecodeCodec8(data, headerData.Protocol)
-		response.Result = &decoder_domain.CodecHeaderResponse{CodecData: res, HeaderData: headerData}
+		response.Result = decoder_domain.CodecHeaderResponse{CodecData: res, HeaderData: headerData}
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
 	case "8e":
 		res, err := DecodeCodec8Ext(data, headerData.Protocol)
-		response.Result = &decoder_domain.CodecHeaderResponse{CodecData: res, HeaderData: headerData}
+		response.Result = decoder_domain.CodecHeaderResponse{CodecData: res, HeaderData: headerData}
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
-	case "0C":
+	case "0c":
+		res, err := DecodeCodec12(data, headerData.Protocol)
+		response.Result = decoder_domain.CodecHeaderResponse{CodecData: res, HeaderData: headerData}
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
-	case "0D":
+	case "0d":
 		//Codec that only serves to send commands to device
+		err := fmt.Errorf("codec is not supported")
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
-	case "0E":
+	case "0e":
+		res, err := DecodeCodec14(data, headerData.Protocol)
+		response.Result = decoder_domain.CodecHeaderResponse{CodecData: res, HeaderData: headerData}
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
-	case "0F":
+	case "0f":
 		//Codec that only serves to send commands to device
+		err := fmt.Errorf("codec is not supported")
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
 	case "10":
 		res, err := DecodeCodec16(data, headerData.Protocol)
-		response.Result = &decoder_domain.CodecHeaderResponse{CodecData: res, HeaderData: headerData}
+		response.Result = decoder_domain.CodecHeaderResponse{CodecData: res, HeaderData: headerData}
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
 	default:
 		return &decoder_domain.CodecDecoded{Response: response, Error: fmt.Errorf("unknown codec: %s", codec)}

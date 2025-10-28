@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	tool_domain "github.com/danieljvsa/teltonika-go/internal/tool"
+	decoder_domain "github.com/danieljvsa/teltonika-go/internal/decoder"
 )
 
 func IsLogin(tram []byte) (bool, error) {
@@ -25,7 +25,7 @@ func IsLogin(tram []byte) (bool, error) {
 	return true, nil
 }
 
-func Login(tram []byte) (*tool_domain.LoginData, error) {
+func Login(tram []byte) (*decoder_domain.CodecHeaderResponse, error) {
 	read := 0
 	valid, err := IsLogin(tram)
 	if err != nil {
@@ -46,5 +46,5 @@ func Login(tram []byte) (*tool_domain.LoginData, error) {
 	bytesImei, _ := hex.DecodeString(hexImei)
 	imei := string(bytesImei)
 
-	return &tool_domain.LoginData{Length: length, IMEI: imei}, nil
+	return &decoder_domain.CodecHeaderResponse{Length: &length, IMEI: &imei}, nil
 }

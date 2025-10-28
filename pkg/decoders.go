@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	decoder_domain "github.com/danieljvsa/teltonika-go/internal/decoder"
+	tools_domain "github.com/danieljvsa/teltonika-go/internal/tool"
 	tools "github.com/danieljvsa/teltonika-go/tools"
 )
 
@@ -48,12 +49,12 @@ func DecodeCodec8(data []byte, protocol string) (*decoder_domain.CodecData, erro
 		}
 		read += int(ioData.LastByte)
 		record := &decoder_domain.Record{
-			Timestamp:   *timestamp,
-			Priority:    priority,
-			GPSData:     *gpsData,
-			EventIO:     eventIO,
-			NumberOfIOs: ioData.NumberOfIOs,
-			IOs:         ioData.IOs,
+			Timestamp:   timestamp,
+			Priority:    &priority,
+			GPSData:     gpsData,
+			EventIO:     &eventIO,
+			NumberOfIOs: &ioData.NumberOfIOs,
+			IOs:         &ioData.IOs,
 		}
 		records = append(records, *record)
 	}
@@ -111,12 +112,12 @@ func DecodeCodec8Ext(data []byte, protocol string) (*decoder_domain.CodecData, e
 		}
 		read += int(ioData.LastByte)
 		record := &decoder_domain.Record{
-			Timestamp:   *timestamp,
-			Priority:    priority,
-			GPSData:     *gpsData,
-			EventIO:     eventIO,
-			NumberOfIOs: ioData.NumberOfIOs,
-			IOs:         ioData.IOs,
+			Timestamp:   timestamp,
+			Priority:    &priority,
+			GPSData:     gpsData,
+			EventIO:     &eventIO,
+			NumberOfIOs: &ioData.NumberOfIOs,
+			IOs:         &ioData.IOs,
 		}
 
 		records = append(records, *record)
@@ -174,12 +175,12 @@ func DecodeCodec16(data []byte, protocol string) (*decoder_domain.CodecData, err
 		}
 		read += int(ioData.LastByte)
 		record := &decoder_domain.Record{
-			Timestamp:   *timestamp,
-			Priority:    priority,
-			GPSData:     *gpsData,
-			EventIO:     eventIO,
-			NumberOfIOs: ioData.NumberOfIOs,
-			IOs:         ioData.IOs,
+			Timestamp:   timestamp,
+			Priority:    &priority,
+			GPSData:     gpsData,
+			EventIO:     &eventIO,
+			NumberOfIOs: &ioData.NumberOfIOs,
+			IOs:         &ioData.IOs,
 		}
 		records = append(records, *record)
 	}
@@ -199,5 +200,154 @@ func DecodeCodec16(data []byte, protocol string) (*decoder_domain.CodecData, err
 	return decodedData, nil
 }
 
-func DecodeCodec12(data []byte, protocol string) (*decoder_domain.CodecData, error) { return nil, nil }
-func DecodeCodec14(data []byte, protocol string) (*decoder_domain.CodecData, error) { return nil, nil }
+func DecodeCodec12(data []byte, protocol string) (*decoder_domain.CodecData, error) {
+	read := 0
+	if len(data) < 12 {
+		return nil, fmt.Errorf("data length too short")
+	}
+	numberOfCommands, err := strconv.ParseInt(hex.EncodeToString(data[:read+1]), 16, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing number of records: %w", err)
+	}
+	fmt.Printf("Number of Commands: %d\n", numberOfCommands)
+	read += 1
+	responseTypeNumber, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing response type: %w", err)
+	}
+	var responseType string
+	switch responseTypeNumber {
+	case 5:
+		responseType = "Command"
+	case 6:
+		responseType = "Response"
+	default:
+		return nil, fmt.Errorf("unknown response type: %d", responseTypeNumber)
+	}
+	fmt.Printf("Response Type: %d (%s)\n", responseTypeNumber, responseType)
+	read += 1
+	var command_responses []tools_domain.CommandResponse
+	for range int(numberOfCommands) {
+		responseSize, err := strconv.ParseInt(hex.EncodeToString(data[read:read+4]), 16, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing size of message: %w", err)
+		}
+		fmt.Printf("Response Size: %d\n", responseSize)
+		read += 4
+		hexString, message, err := tools.DecodeToHexThenASCII(data[read:read+int(responseSize)], []byte{}, int(responseSize))
+		if err != nil {
+			return nil, fmt.Errorf("error parsing message: %w", err)
+		}
+		fmt.Printf("Decoded Command Response: %s\n", message)
+		fmt.Printf("Hex Command Response: %s\n", hexString)
+		read += int(responseSize)
+		commandResponse := &tools_domain.CommandResponse{
+			Response:   message,
+			HexMessage: hexString,
+		}
+		command_responses = append(command_responses, *commandResponse)
+	}
+	responseType2, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing size of message: %w", err)
+	}
+	read += 1
+	if numberOfCommands != responseType2 {
+		return nil, fmt.Errorf("response type mismatch")
+	}
+	if protocol == "TCP" {
+		tram := append([]byte{0x0C}, data...)
+		checkCRC := tools.IsValidTram(tram)
+		if !checkCRC {
+			return nil, fmt.Errorf("CRC is not valid")
+		}
+	}
+	decodedData := &decoder_domain.CodecData{
+		NumberOfRecords: numberOfCommands,
+		Records: []decoder_domain.Record{
+			{
+				CommandResponses: &command_responses,
+			},
+		},
+	}
+	return decodedData, nil
+}
+
+func DecodeCodec14(data []byte, protocol string) (*decoder_domain.CodecData, error) {
+	read := 0
+	if len(data) < 12 {
+		return nil, fmt.Errorf("data length too short")
+	}
+	numberOfCommands, err := strconv.ParseInt(hex.EncodeToString(data[:read+1]), 16, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing number of records: %w", err)
+	}
+	fmt.Printf("Number of Commands: %d\n", numberOfCommands)
+	read += 1
+	responseTypeNumber, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing response type: %w", err)
+	}
+	var responseType string
+	switch responseTypeNumber {
+	case 5:
+		responseType = "Command"
+	case 6:
+		responseType = "Response"
+	default:
+		return nil, fmt.Errorf("unknown response type: %d", responseTypeNumber)
+	}
+	fmt.Printf("Response Type: %d (%s)\n", responseTypeNumber, responseType)
+	read += 1
+	var command_responses []tools_domain.CommandResponse
+	for range int(numberOfCommands) {
+		responseSize, err := strconv.ParseInt(hex.EncodeToString(data[read:read+4]), 16, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing size of message: %w", err)
+		}
+		fmt.Printf("Response Size: %d\n", responseSize)
+		read += 4
+		imei, err := tools.DecodeIMEI(data[read : read+int(responseSize)])
+		if err != nil {
+			return nil, fmt.Errorf("error parsing IMEI: %w", err)
+		}
+		hexString, message, err := tools.DecodeToHexThenASCII(data[read:read+int(responseSize)], []byte{}, int(responseSize))
+		if err != nil {
+			return nil, fmt.Errorf("error parsing message: %w", err)
+		}
+		fmt.Printf("Decoded Command Response: %s\n", message)
+		fmt.Printf("Hex Command Response: %s\n", hexString)
+		read += int(responseSize)
+		commandResponse := &tools_domain.CommandResponse{
+			Response:    message,
+			HexMessage:  hexString,
+			IMEI:        imei,
+			CommandType: responseType,
+		}
+		command_responses = append(command_responses, *commandResponse)
+	}
+	responseType2, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing size of message: %w", err)
+	}
+	read += 1
+	if numberOfCommands != responseType2 {
+		return nil, fmt.Errorf("response type mismatch")
+	}
+	if protocol == "TCP" {
+		tram := append([]byte{0x0E}, data...)
+		checkCRC := tools.IsValidTram(tram)
+		if !checkCRC {
+			return nil, fmt.Errorf("CRC is not valid")
+		}
+	}
+	decodedData := &decoder_domain.CodecData{
+		NumberOfRecords: numberOfCommands,
+		Records: []decoder_domain.Record{
+			{
+				CommandResponses: &command_responses,
+			},
+		},
+	}
+	return decodedData, nil
+}

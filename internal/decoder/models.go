@@ -9,12 +9,21 @@ import (
 )
 
 type Record struct {
-	Timestamp   time.Time
-	Priority    int64
-	GPSData     tool.GPSData
-	EventIO     int64
-	NumberOfIOs int64
-	IOs         []io.IOData
+	// Optional fields to support different codec payloads.
+	// Use pointers where a value may be absent for some codecs.
+	Timestamp        *time.Time
+	Priority         *int64
+	GPSData          *tool.GPSData
+	EventIO          *int64
+	NumberOfIOs      *int64
+	IOs              *[]io.IOData
+	CommandResponses *[]tool.CommandResponse
+	CommandType      *string
+
+	// Codec-specific metadata
+	CodecID    *int
+	RawData    *[]byte
+	Attributes *map[string]any // catch-all for extra codec-specific values
 }
 
 type CodecData struct {
@@ -29,10 +38,15 @@ type CodecDecoded struct {
 
 type ResponseType struct {
 	Type   string
-	Result any
+	Result CodecHeaderResponse
 }
 
 type CodecHeaderResponse struct {
+	// Tram type fields
 	CodecData  *CodecData
 	HeaderData *header.HeaderData
+
+	// Login packet fields
+	Length *int64
+	IMEI   *string
 }
