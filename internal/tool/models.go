@@ -1,5 +1,7 @@
 package tool
 
+import "time"
+
 type GPSData struct {
 	Latitude  float64
 	Longitude float64
@@ -16,4 +18,12 @@ type LoginData struct {
 
 type ProtocolData struct {
 	Protocol string
+}
+
+type CommandResponse struct {
+	Timestamp   *time.Time
+	Response    string
+	HexMessage  string
+	CommandType string
+	IMEI        string
 }

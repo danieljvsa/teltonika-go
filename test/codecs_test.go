@@ -1,0 +1,265 @@
+package teltonika_go_test
+
+import (
+	"encoding/hex"
+	"testing"
+
+	pkg "github.com/danieljvsa/teltonika-go/pkg"
+)
+
+// Comprehensive codec decoder tests using valid trams from router_test
+func TestCodec8Decoder(t *testing.T) {
+	tests := []struct {
+		name     string
+		hexInput string
+		wantErr  bool
+	}{
+		{
+			name:     "Valid Codec 08 TCP",
+			hexInput: "000000000000003608010000016B40D8EA30010000000000000000000000000000000105021503010101425E0F01F10000601A014E0000000000000000010000C7CF",
+			wantErr:  false,
+		},
+		{
+			name:     "Valid Codec 08 UDP",
+			hexInput: "003DCAFE0105000F33353230393330383634303336353508010000016B4F815B30010000000000000000000000000000000103021503010101425DBC000001",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := hex.DecodeString(tt.hexInput)
+			if err != nil {
+				t.Fatalf("invalid test input: %v", err)
+			}
+
+			res := pkg.TramDecoder(data)
+			if (res.Error != nil) != tt.wantErr {
+				t.Errorf("wantErr %v, got %v", tt.wantErr, res.Error)
+			}
+		})
+	}
+}
+
+func TestCodec8ExtDecoder(t *testing.T) {
+	tests := []struct {
+		name     string
+		hexInput string
+		wantErr  bool
+	}{
+		{
+			name:     "Valid Codec 8E TCP",
+			hexInput: "000000000000004A8E010000016B412CEE000100000000000000000000000000000000010005000100010100010011001D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A00000100002994",
+			wantErr:  false,
+		},
+		{
+			name:     "Valid Codec 8E UDP",
+			hexInput: "005FCAFE0107000F3335323039333038363430333635358E010000016B4F831C680100000000000000000000000000000000010005000100010100010011009D00010010015E2C880002000B000000003544C87A000E000000001DD7E06A000001",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := hex.DecodeString(tt.hexInput)
+			if err != nil {
+				t.Fatalf("invalid test input: %v", err)
+			}
+
+			res := pkg.TramDecoder(data)
+			if (res.Error != nil) != tt.wantErr {
+				t.Errorf("wantErr %v, got %v", tt.wantErr, res.Error)
+			}
+		})
+	}
+}
+
+func TestCodec16Decoder(t *testing.T) {
+	tests := []struct {
+		name     string
+		hexInput string
+		wantErr  bool
+	}{
+		{
+			name:     "Valid Codec 16 TCP",
+			hexInput: "000000000000005F10020000016BDBC7833000000000000000000000000000000000000B05040200010000030002000B00270042563A00000000016BDBC7871800000000000000000000000000000000000B05040200010000030002000B00260042563A00000200005FB3",
+			wantErr:  false,
+		},
+		{
+			name:     "Valid Codec 16 UDP",
+			hexInput: "015BCAFE0101000F33353230393430383532333135393210010000015117E40FE80000000000000000000000000000000000EF05050400010000030000B40000EF01010042111A000001",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := hex.DecodeString(tt.hexInput)
+			if err != nil {
+				t.Fatalf("invalid test input: %v", err)
+			}
+
+			res := pkg.TramDecoder(data)
+			if (res.Error != nil) != tt.wantErr {
+				t.Errorf("wantErr %v, got %v", tt.wantErr, res.Error)
+			}
+		})
+	}
+}
+
+func TestCodec12Decoder(t *testing.T) {
+	tests := []struct {
+		name     string
+		hexInput string
+		wantErr  bool
+	}{
+		{
+			name:     "Valid Codec 12 TCP",
+			hexInput: "00000000000000900C010600000088494E493A323031392F372F323220373A3232205254433A323031392F372F323220373A3533205253543A32204552523A312053523A302042523A302043463A302046473A3020464C3A302054553A302F302055543A3020534D533A30204E4F4750533A303A3330204750533A31205341543A302052533A332052463A36352053463A31204D443A30010000C78F",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := hex.DecodeString(tt.hexInput)
+			if err != nil {
+				t.Fatalf("invalid test input: %v", err)
+			}
+
+			res := pkg.TramDecoder(data)
+			if (res.Error != nil) != tt.wantErr {
+				t.Errorf("wantErr %v, got %v", tt.wantErr, res.Error)
+			}
+		})
+	}
+}
+
+func TestCodec13Decoder(t *testing.T) {
+	tests := []struct {
+		name     string
+		hexInput string
+		wantErr  bool
+	}{
+		{
+			name:     "Valid Codec 13 TCP",
+			hexInput: "00000000000000170D01060000000F0000016C0A81C320676574696E666F0100005B66",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := hex.DecodeString(tt.hexInput)
+			if err != nil {
+				t.Fatalf("invalid test input: %v", err)
+			}
+
+			res := pkg.TramDecoder(data)
+			if (res.Error != nil) != tt.wantErr {
+				t.Errorf("wantErr %v, got %v", tt.wantErr, res.Error)
+			}
+		})
+	}
+}
+
+func TestCodec14Decoder(t *testing.T) {
+	tests := []struct {
+		name     string
+		hexInput string
+		wantErr  bool
+	}{
+		{
+			name:     "Valid Codec 14 TCP",
+			hexInput: "00000000000000AB0E0106000000A303520930814522515665723A30332E31382E31345F3034204750533A41584E5F352E31305F333333332048773A464D42313230204D6F643A313520494D45493A33353230393330383134353232353120496E69743A323031382D31312D323220373A313320557074696D653A3137323334204D41433A363042444430303136323631205350433A312830292041584C3A30204F42443A3020424C3A312E362042543A340100007AAE",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := hex.DecodeString(tt.hexInput)
+			if err != nil {
+				t.Fatalf("invalid test input: %v", err)
+			}
+
+			res := pkg.TramDecoder(data)
+			if (res.Error != nil) != tt.wantErr {
+				t.Errorf("wantErr %v, got %v", tt.wantErr, res.Error)
+			}
+		})
+	}
+}
+
+func TestCodec15Decoder(t *testing.T) {
+	tests := []struct {
+		name     string
+		hexInput string
+		wantErr  bool
+	}{
+		{
+			name:     "Valid Codec 15 TCP",
+			hexInput: "000000000000001b0f010b00000013654b65a4012345678912345648656c6c6f210a01000093d6",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := hex.DecodeString(tt.hexInput)
+			if err != nil {
+				t.Fatalf("invalid test input: %v", err)
+			}
+
+			res := pkg.TramDecoder(data)
+			if (res.Error != nil) != tt.wantErr {
+				t.Errorf("wantErr %v, got %v", tt.wantErr, res.Error)
+			}
+		})
+	}
+}
+
+// Test edge cases
+func TestDecoderEdgeCases(t *testing.T) {
+	tests := []struct {
+		name        string
+		hexInput    string
+		wantErr     bool
+		description string
+	}{
+		{
+			name:        "Empty data",
+			hexInput:    "",
+			wantErr:     true,
+			description: "Empty tram should fail",
+		},
+		{
+			name:        "Too short data",
+			hexInput:    "0000",
+			wantErr:     true,
+			description: "Data shorter than header should fail",
+		},
+		{
+			name:        "Invalid header length",
+			hexInput:    "FFFFFFFF0000FFFF",
+			wantErr:     true,
+			description: "Invalid length field should fail",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := hex.DecodeString(tt.hexInput)
+			if err != nil && !tt.wantErr {
+				t.Fatalf("invalid test input: %v", err)
+			}
+
+			if len(data) > 0 {
+				res := pkg.TramDecoder(data)
+				if (res.Error != nil) != tt.wantErr {
+					t.Errorf("%s: wantErr %v, got %v", tt.description, tt.wantErr, res.Error)
+				}
+			}
+		})
+	}
+}
