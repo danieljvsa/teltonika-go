@@ -1,13 +1,20 @@
 package tools
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"fmt"
+)
 
 func DecodeIMEI(data []byte) (string, error) {
-	hexImei := hex.EncodeToString(data)
-	bytesImei, err := hex.DecodeString(hexImei)
-	if err != nil {
-		return "", err
+	// Decode hex-encoded bytes to IMEI string
+	// IMEI is typically 15 bytes (30 hex characters)
+	if len(data) == 0 {
+		return "", fmt.Errorf("empty IMEI data")
 	}
-	imei := string(bytesImei)
-	return imei, nil
+	if len(data) < 8 {
+		return "", fmt.Errorf("IMEI data too short: %d bytes", len(data))
+	}
+
+	hexString := hex.EncodeToString(data)
+	return hexString, nil
 }

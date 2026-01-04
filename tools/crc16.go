@@ -2,8 +2,6 @@ package tools
 
 import (
 	"encoding/binary"
-	"encoding/hex"
-	"fmt"
 )
 
 func Crc16IBM(data []byte) uint16 {
@@ -27,9 +25,7 @@ func IsValidTram(tram []byte) bool {
 	}
 	length := len(tram)
 	data := tram[:len(tram)-4]
-	fmt.Printf("Data for CRC: %s\n", hex.EncodeToString(data))
 	receivedCRC := uint16(binary.BigEndian.Uint32(tram[length-4:]))
 	calculatedCRC := Crc16IBM(data)
-	fmt.Printf("%d | %d\n", receivedCRC, calculatedCRC)
 	return receivedCRC == calculatedCRC
 }
