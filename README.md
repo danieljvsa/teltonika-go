@@ -7,22 +7,33 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 
 ## 📦 Version
 
-**v0.3.0**
+**v0.4.0**
 
 ---
 
 ## ✨ Features
 
 - Decode login packets  
-- Parse AVL records using Codecs 08, 8E and 16  
+- Parse AVL records using Codecs 08, 8E, 16, 12, 13, 14, and 15
+- Support for command response codecs with command handling
 - Validate and interpret Teltonika TCP/UDP headers  
 - Graceful error handling with structured responses  
 - Minimal dependencies, pure Go
+- Comprehensive test coverage with 30+ unit tests
 
 ---
 
 ## 🆕 Changes Introduced
 
+### v0.4.0
+- 🆕 **Added Codec 12, 13, 14, 15 support** - Full support for command response codecs with command handling
+- 🧹 **Production code cleanup** - Removed all debug print statements from decoder functions
+- ✅ **Comprehensive test coverage** - Added extensive unit tests for all codec types and tool functions
+- 🛡️ **Improved error handling** - Added bounds checking in header decoder to prevent panics on invalid data
+- ⏰ **Enhanced timestamp support** - Added CalcTimestampSeconds and CalcTimestampSecondsBigEndian functions for 4-byte second timestamps
+- 📦 **Better data structures** - Improved Record model with pointer fields for optional data support
+
+### Previous Changes
 - 🎧 Added support for decoding with Codec 16  
 - 🧬 Updated internal types to support `generation_type` type workflows
 
