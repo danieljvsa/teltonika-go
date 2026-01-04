@@ -21,7 +21,7 @@ type Record struct {
 	CommandType      *string
 
 	// Codec-specific metadata
-	CodecID    *int
+	CodecID    *int //will be nil for some codecs
 	RawData    *[]byte
 	Attributes *map[string]any // catch-all for extra codec-specific values
 }

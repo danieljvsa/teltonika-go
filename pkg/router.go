@@ -55,7 +55,9 @@ func TramDecoder(request []byte) *decoder_domain.CodecDecoded {
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
 	case "0d":
 		//Codec that only serves to send commands to device
-		err := fmt.Errorf("codec is not supported")
+		//err := fmt.Errorf("codec is not supported")
+		res, err := DecodeCodec13(data, headerData.Protocol)
+		response.Result = decoder_domain.CodecHeaderResponse{CodecData: res, HeaderData: headerData}
 		return &decoder_domain.CodecDecoded{Response: response, Error: err}
 	case "0e":
 		res, err := DecodeCodec14(data, headerData.Protocol)
