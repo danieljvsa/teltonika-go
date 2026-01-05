@@ -10,6 +10,32 @@ import (
 	tools "github.com/danieljvsa/teltonika-go/tools"
 )
 
+// DecodeCodec8 decodes Teltonika Codec 08 (AVL data) frames containing GPS records with I/O data.
+// Codec 08 is the most common protocol for transmitting vehicle location and telemetry.
+//
+// Frame format per record:
+//   - Timestamp: 8 bytes (milliseconds since Unix epoch)
+//   - Priority: 1 byte
+//   - GPS Data: 15 bytes (latitude, longitude, altitude, angle, satellites, speed)
+//   - Event IO: 1 byte
+//   - IO Data: Variable length (depends on IO element count)
+//
+// Parameters:
+//   - data: decoded frame data without header/CRC
+//   - protocol: "TCP" or "UDP" - determines whether to validate CRC
+//
+// Returns:
+//   - *decoder_domain.CodecData: structure containing all decoded records
+//   - error: if frame is malformed or CRC check fails
+//
+// Example:
+//
+//	codecData, err := DecodeCodec8(frameData, "TCP")
+//	if err == nil {
+//		for _, record := range codecData.Records {
+//			fmt.Printf("Lat: %f, Lon: %f\n", record.GPSData.Latitude, record.GPSData.Longitude)
+//		}
+//	}
 func DecodeCodec8(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
 	if len(data) < 29 {
@@ -74,6 +100,23 @@ func DecodeCodec8(data []byte, protocol string) (*decoder_domain.CodecData, erro
 	return decodedData, nil
 }
 
+// DecodeCodec8Ext decodes Teltonika Codec 8E (Extended AVL data) frames.
+// Codec 8E is an extended version of Codec 8 with additional field support and
+// enhanced structure for more detailed telemetry.
+//
+// Similar to Codec 8 but with extended structure and additional data fields.
+//
+// Parameters:
+//   - data: decoded frame data without header/CRC
+//   - protocol: "TCP" or "UDP" - determines whether to validate CRC
+//
+// Returns:
+//   - *decoder_domain.CodecData: structure containing all decoded records
+//   - error: if frame is malformed or CRC check fails
+//
+// Example:
+//
+//	codecData, err := DecodeCodec8Ext(frameData, "TCP")
 func DecodeCodec8Ext(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
 	if len(data) < 29 {
@@ -136,6 +179,21 @@ func DecodeCodec8Ext(data []byte, protocol string) (*decoder_domain.CodecData, e
 	return decodedData, nil
 }
 
+// DecodeCodec16 decodes Teltonika Codec 16 (GPRS/IQ frames with device type).
+// Codec 16 includes device type information and specialized handling for
+// GPRS-based communication frames.
+//
+// Parameters:
+//   - data: decoded frame data without header/CRC
+//   - protocol: "TCP" or "UDP" - determines whether to validate CRC
+//
+// Returns:
+//   - *decoder_domain.CodecData: structure containing all decoded records
+//   - error: if frame is malformed or CRC check fails
+//
+// Example:
+//
+//	codecData, err := DecodeCodec16(frameData, "TCP")
 func DecodeCodec16(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
 	if len(data) < 29 {
@@ -200,6 +258,40 @@ func DecodeCodec16(data []byte, protocol string) (*decoder_domain.CodecData, err
 	return decodedData, nil
 }
 
+// DecodeCodec12 decodes Teltonika Codec 12 (Command response codec).
+// Codec 12 handles command responses from devices with command handling and
+// response data including timestamps and IMEI information.
+//
+// Frame structure:
+//   - Number of commands: 1 byte
+//   - Response type: 1 byte (5=Command, 6=Response)
+//   - For each command:
+//   - Response size: 4 bytes
+//   - Timestamp: 4 bytes (seconds)
+//   - IMEI: 8 bytes
+//   - Command response: variable length
+//   - Response type count: 1 byte
+//
+// Parameters:
+//   - data: decoded frame data without header/CRC
+//   - protocol: "TCP" or "UDP" - determines whether to validate CRC
+//
+// Returns:
+//   - *decoder_domain.CodecData: structure containing command responses
+//   - error: if frame is malformed or validation fails
+//
+// Example:
+//
+//	codecData, err := DecodeCodec12(frameData, "TCP")
+//	if err == nil {
+//		for _, record := range codecData.Records {
+//			if record.CommandResponses != nil {
+//				for _, cmd := range *record.CommandResponses {
+//					fmt.Println("Response:", cmd.Response)
+//				}
+//			}
+//		}
+//	}
 func DecodeCodec12(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
 	if len(data) < 12 {
@@ -269,7 +361,38 @@ func DecodeCodec12(data []byte, protocol string) (*decoder_domain.CodecData, err
 	return decodedData, nil
 }
 
-// Note: Codec13 packets are used only when the “Message Timestamp” parameter in RS232 settings is enabled.
+// DecodeCodec13 decodes Teltonika Codec 13 (Command response codec).
+// Codec 13 is similar to Codec 12 but includes timestamps for each command response.
+//
+// Frame structure:
+//   - Number of commands: 1 byte
+//   - Response type: 1 byte (6=Response) Other types not supported
+//   - For each command:
+//   - Response size: 4 bytes
+//   - Timestamp: 8 bytes (milliseconds since Unix epoch)
+//   - Command response: variable length
+//   - Response type count: 1 byte
+//
+// Parameters:
+//   - data: decoded frame data without header/CRC
+//   - protocol: "TCP" or "UDP" - determines whether to validate CRC
+//
+// Returns:
+//   - *decoder_domain.CodecData: structure containing command responses with timestamps
+//   - error: if frame is malformed or validation fails
+//
+// Example:
+//
+//	codecData, err := DecodeCodec13(frameData, "TCP")
+//	if err == nil {
+//		for _, record := range codecData.Records {
+//			if record.CommandResponses != nil {
+//				for _, cmd := range *record.CommandResponses {
+//					fmt.Println("Timestamp:", cmd.Timestamp, "Response:", cmd.Response)
+//				}
+//			}
+//		}
+//	}
 func DecodeCodec13(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
 	if len(data) < 12 {
@@ -347,6 +470,37 @@ func DecodeCodec13(data []byte, protocol string) (*decoder_domain.CodecData, err
 	return decodedData, nil
 }
 
+// DecodeCodec14 decodes Teltonika Codec 14 (Command response codec).
+// Codec 14 handles command responses with IMEI information.
+// Frame structure:
+//   - Number of commands: 1 byte
+//   - Response type: 1 byte (5=Command, 6=Response)
+//   - For each command:
+//   - Response size: 4 bytes
+//   - IMEI: 8 bytes
+//   - Command response: variable length
+//   - Response type count: 1 byte
+//
+// Parameters:
+//   - data: decoded frame data without header/CRC
+//   - protocol: "TCP" or "UDP" - determines whether to validate CRC
+//
+// Returns:
+//   - *decoder_domain.CodecData: structure containing command responses
+//   - error: if frame is malformed or validation fails
+//
+// Example:
+//
+//	codecData, err := DecodeCodec14(frameData, "TCP")
+//	if err == nil {
+//		for _, record := range codecData.Records {
+//			if record.CommandResponses != nil {
+//				for _, cmd := range *record.CommandResponses {
+//					fmt.Println("Response:", cmd.Response)
+//				}
+//			}
+//		}
+//	}
 func DecodeCodec14(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
 	if len(data) < 12 {
@@ -422,6 +576,40 @@ func DecodeCodec14(data []byte, protocol string) (*decoder_domain.CodecData, err
 	return decodedData, nil
 }
 
+// DecodeCodec15 decodes Teltonika Codec 15 (Command response codec).
+// Codec 15 handles command responses with timestamps and IMEI information.
+//
+// Frame structure:
+//   - Number of commands: 1 byte
+//   - Response type: 1 byte (5=Command, 6=Response)
+//   - For each command:
+//   - Response size: 4 bytes
+//   - Timestamp: 4 bytes (seconds since Unix epoch)
+//   - IMEI: 8 bytes
+//   - Command response: variable length
+//   - Response type count: 1 byte
+//
+// Parameters:
+//   - data: decoded frame data without header/CRC
+//   - protocol: "TCP" or "UDP" - determines whether to validate CRC
+//
+// Returns:
+//   - *decoder_domain.CodecData: structure containing command responses
+//   - error: if frame is malformed or validation fails
+//
+// Example:
+//
+//	codecData, err := DecodeCodec15(frameData, "TCP")
+//	if err == nil {
+//		for _, record := range codecData.Records {
+//			if record.CommandResponses != nil {
+//				for _, cmd := range *record.CommandResponses {
+//					fmt.Println("Response:", cmd.Response)
+//				}
+//			}
+//		}
+//	}
+
 func DecodeCodec15(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
 	if len(data) < 12 {
@@ -445,7 +633,7 @@ func DecodeCodec15(data []byte, protocol string) (*decoder_domain.CodecData, err
 			return nil, fmt.Errorf("error parsing size of message: %w", err)
 		}
 		read += 4
-		timestamp, err := tools.CalcTimestamp(data[read : read+4])
+		timestamp, err := tools.CalcTimestampSeconds(data[read : read+4])
 		if err != nil {
 			return nil, fmt.Errorf("error parsing timestamp: %w", err)
 		}

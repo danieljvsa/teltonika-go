@@ -8,6 +8,21 @@ import (
 	"time"
 )
 
+// CalcTimestamp converts an 8-byte big-endian byte slice representing
+// a Unix timestamp in milliseconds to a UTC time.Time pointer.
+// It uses hex string encoding to parse the bytes as a 64-bit integer.
+//
+// Parameters:
+//   - data: 8-byte slice containing millisecond timestamp
+//
+// Returns:
+//   - *time.Time: pointer to the decoded UTC time
+//   - error: parsing error if the byte slice cannot be converted to integer
+//
+// Example:
+//
+//	data := []byte{0x00, 0x00, 0x01, 0x6A, 0x57, 0x1F, 0x00, 0x00}
+//	timestamp, err := CalcTimestamp(data)
 func CalcTimestamp(data []byte) (*time.Time, error) {
 	timestamp, err := strconv.ParseInt(hex.EncodeToString(data), 16, 64)
 	if err != nil {
@@ -18,7 +33,20 @@ func CalcTimestamp(data []byte) (*time.Time, error) {
 }
 
 // CalcTimestampSeconds converts a byte slice (hex-encoded) representing
-// Unix timestamp in seconds to a UTC time.Time pointer.
+// a Unix timestamp in seconds to a UTC time.Time pointer.
+// Uses hex string encoding to parse bytes as a 64-bit integer.
+//
+// Parameters:
+//   - data: byte slice containing second timestamp
+//
+// Returns:
+//   - *time.Time: pointer to the decoded UTC time
+//   - error: parsing error if conversion fails
+//
+// Example:
+//
+//	data := []byte{0x56, 0xD8, 0x26, 0xA0}
+//	timestamp, err := CalcTimestampSeconds(data)
 func CalcTimestampSeconds(data []byte) (*time.Time, error) {
 	timestamp, err := strconv.ParseInt(hex.EncodeToString(data), 16, 64)
 	if err != nil {
@@ -29,7 +57,20 @@ func CalcTimestampSeconds(data []byte) (*time.Time, error) {
 }
 
 // CalcTimestampSecondsLittleEndian converts a little-endian byte slice
-// representing Unix timestamp in seconds to a UTC time.Time pointer.
+// representing a Unix timestamp in seconds to a UTC time.Time pointer.
+// Uses encoding/binary package for proper little-endian byte order handling.
+//
+// Parameters:
+//   - data: 4-byte little-endian slice containing second timestamp
+//
+// Returns:
+//   - *time.Time: pointer to the decoded UTC time
+//   - error: if data length is insufficient
+//
+// Example:
+//
+//	data := []byte{0xA0, 0x26, 0xD8, 0x56}
+//	timestamp, err := CalcTimestampSecondsLittleEndian(data)
 func CalcTimestampSecondsLittleEndian(data []byte) (*time.Time, error) {
 	if len(data) < 4 {
 		return nil, fmt.Errorf("insufficient data for timestamp")
@@ -41,7 +82,20 @@ func CalcTimestampSecondsLittleEndian(data []byte) (*time.Time, error) {
 }
 
 // CalcTimestampSecondsBigEndian converts a big-endian byte slice
-// representing Unix timestamp in seconds to a UTC time.Time pointer.
+// representing a Unix timestamp in seconds to a UTC time.Time pointer.
+// Uses encoding/binary package for proper big-endian byte order handling.
+//
+// Parameters:
+//   - data: 4-byte big-endian slice containing second timestamp
+//
+// Returns:
+//   - *time.Time: pointer to the decoded UTC time
+//   - error: if data length is insufficient
+//
+// Example:
+//
+//	data := []byte{0x56, 0xD8, 0x26, 0xA0}
+//	timestamp, err := CalcTimestampSecondsBigEndian(data)
 func CalcTimestampSecondsBigEndian(data []byte) (*time.Time, error) {
 	if len(data) < 4 {
 		return nil, fmt.Errorf("insufficient data for timestamp")
