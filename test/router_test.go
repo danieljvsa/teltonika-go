@@ -89,6 +89,11 @@ func TestTramDecoder(t *testing.T) {
 			input:   "000000000000001b0f010b00000013654b65a4012345678912345648656c6c6f210a01000093d6",
 			wantErr: false,
 		},
+		{
+			name:    "Valid Codec 15 TCP (2)",
+			input:   "000000000000001b0f010b00000013654b65a4012345678912345648656c6c6f210a01000093d6",
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
