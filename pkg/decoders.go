@@ -445,7 +445,7 @@ func DecodeCodec15(data []byte, protocol string) (*decoder_domain.CodecData, err
 			return nil, fmt.Errorf("error parsing size of message: %w", err)
 		}
 		read += 4
-		timestamp, err := tools.CalcTimestamp(data[read : read+4])
+		timestamp, err := tools.CalcTimestampSeconds(data[read : read+4])
 		if err != nil {
 			return nil, fmt.Errorf("error parsing timestamp: %w", err)
 		}
