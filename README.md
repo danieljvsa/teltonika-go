@@ -7,7 +7,7 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 
 ## 📦 Version
 
-**v0.4.0**
+**v0.4.1**
 
 ---
 
@@ -148,3 +148,4 @@ Please fork the repo and submit a pull request or open an issue.
 
 **Daniel Sá**  
 [github.com/danieljvsa](https://github.com/danieljvsa)
+
