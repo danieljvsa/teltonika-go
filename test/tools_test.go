@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	tool_domain "github.com/danieljvsa/teltonika-go/internal/tool"
 	tools "github.com/danieljvsa/teltonika-go/tools"
 )
 
@@ -55,6 +56,31 @@ func TestDecodeGPSData(t *testing.T) {
 	}
 }
 
+func TestEncodeGPSDataRoundTrip(t *testing.T) {
+	gps := &tool_domain.GPSData{
+		Latitude:  37.7749,
+		Longitude: -122.4194,
+		Altitude:  15,
+		Angle:     90,
+		Satelites: 8,
+		Speed:     55,
+	}
+
+	encoded, err := tools.EncodeGPSData(gps)
+	if err != nil {
+		t.Fatalf("EncodeGPSData failed: %v", err)
+	}
+
+	decoded, err := tools.DecodeGPSData(encoded)
+	if err != nil {
+		t.Fatalf("DecodeGPSData failed: %v", err)
+	}
+
+	if decoded.Speed != gps.Speed {
+		t.Errorf("expected speed %d, got %d", gps.Speed, decoded.Speed)
+	}
+}
+
 func TestCalcTimestamp(t *testing.T) {
 	// Example timestamp: 1711765200000 (Unix timestamp in milliseconds)
 	// This corresponds to 2024-04-01 12:00:00 UTC.
@@ -73,6 +99,21 @@ func TestCalcTimestamp(t *testing.T) {
 	// Compare result
 	if !result.Equal(expectedTime) {
 		t.Errorf("Expected %v, got %v", expectedTime, result)
+	}
+}
+
+func TestEncodeTimestampSeconds(t *testing.T) {
+	ts := time.Unix(1457006240, 0).UTC()
+	encoded, err := tools.EncodeTimestampSeconds(&ts)
+	if err != nil {
+		t.Fatalf("EncodeTimestampSeconds failed: %v", err)
+	}
+	decoded, err := tools.CalcTimestampSecondsBigEndian(encoded)
+	if err != nil {
+		t.Fatalf("CalcTimestampSecondsBigEndian failed: %v", err)
+	}
+	if !decoded.Equal(ts) {
+		t.Errorf("expected %v, got %v", ts, decoded)
 	}
 }
 

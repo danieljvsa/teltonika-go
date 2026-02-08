@@ -6,6 +6,17 @@ import (
 	"strconv"
 )
 
+var generationTypeEncoding = map[string]byte{
+	"On Exit":     0,
+	"On Entrance": 1,
+	"On Both":     2,
+	"Reserved":    3,
+	"Hysteresis":  4,
+	"On Change":   5,
+	"Eventual":    6,
+	"Periodical":  7,
+}
+
 func GetGenerationType(data []byte, startByte int64, length int64) (string, error) {
 	byte := startByte
 	generation_type_translation := "Unknown generation type"
@@ -47,4 +58,23 @@ func GetGenerationType(data []byte, startByte int64, length int64) (string, erro
 	default:
 		return generation_type_translation, nil
 	}
+}
+
+// EncodeGenerationType converts a generation type name to its byte value.
+//
+// Valid values mirror Teltonika generation types used by Codec 16:
+//   - "On Exit"
+//   - "On Entrance"
+//   - "On Both"
+//   - "Reserved"
+//   - "Hysteresis"
+//   - "On Change"
+//   - "Eventual"
+//   - "Periodical"
+func EncodeGenerationType(generationType string) (byte, error) {
+	value, ok := generationTypeEncoding[generationType]
+	if !ok {
+		return 0, fmt.Errorf("unknown generation type: %s", generationType)
+	}
+	return value, nil
 }
