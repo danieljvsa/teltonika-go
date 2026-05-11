@@ -43,24 +43,36 @@ func DecodeHeaderUDP(header []byte) (*header_domain.HeaderDataUDP, error) {
 	}
 	read += 2
 
+	if len(header) < read+2 {
+		return nil, fmt.Errorf("header length exceeds available data")
+	}
 	packetID, err := strconv.ParseInt(hex.EncodeToString(header[read:read+2]), 16, 64)
 	if err != nil {
 		return nil, err
 	}
 	read += 3
 
+	if len(header) < read+1 {
+		return nil, fmt.Errorf("header length exceeds available data")
+	}
 	avlPacketID, err := strconv.ParseInt(hex.EncodeToString(header[read:read+1]), 16, 64)
 	if err != nil {
 		return nil, err
 	}
 	read += 1
 
+	if len(header) < read+2 {
+		return nil, fmt.Errorf("header length exceeds available data")
+	}
 	imeiLength, err := strconv.ParseInt(hex.EncodeToString(header[read:read+2]), 16, 64)
 	if err != nil {
 		return nil, err
 	}
 	read += 2
 
+	if len(header) < read+int(imeiLength) {
+		return nil, fmt.Errorf("header length exceeds available data")
+	}
 	hexImei := hex.EncodeToString(header[read : read+int(imeiLength)])
 	bytesImei, _ := hex.DecodeString(hexImei)
 	imei := string(bytesImei)
