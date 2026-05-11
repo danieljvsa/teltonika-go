@@ -7,7 +7,7 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 
 ## 📦 Version
 
-**v0.4.1**
+**v0.5.0**
 
 ---
 
