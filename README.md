@@ -201,6 +201,75 @@ _ = payload
 
 ---
 
+## 🧩 Encoding Trams
+
+The encoder mirrors the decoder structure: you build `CodecData` with records, then call an encoder for the codec you want. The returned payload contains the record count, records, the trailing record count, and the CRC (ready to be wrapped in a TCP/UDP header).
+
+```go
+package main
+
+import (
+	"time"
+
+	decoder "github.com/danieljvsa/teltonika-go/internal/decoder"
+	io_domain "github.com/danieljvsa/teltonika-go/internal/io"
+	tool_domain "github.com/danieljvsa/teltonika-go/internal/tool"
+	pkg "github.com/danieljvsa/teltonika-go/pkg"
+)
+
+func main() {
+	ts := time.Now().UTC()
+	priority := int64(1)
+	eventIO := int64(5)
+
+	record := decoder.Record{
+		Timestamp: &ts,
+		Priority:  &priority,
+		GPSData: &tool_domain.GPSData{
+			Latitude:  52.520008,
+			Longitude: 13.404954,
+			Altitude:  120,
+			Angle:     25,
+			Satelites: 7,
+			Speed:     60,
+		},
+		EventIO: &eventIO,
+		IOs: &[]io_domain.IOData{
+			{IO: 1, Value: "01"},
+		},
+	}
+
+	codecData := &decoder.CodecData{
+		NumberOfRecords: 1,
+		Records:         []decoder.Record{record},
+	}
+
+	payload, _ := pkg.EncodeCodec8(codecData)
+	_ = payload // wrap with header & codec ID if sending over TCP/UDP
+}
+```
+
+### Command Response Encoding
+
+```go
+commandType := "Response"
+responses := []tool_domain.CommandResponse{
+	{Response: "OK"},
+}
+
+codecData := &decoder.CodecData{
+	NumberOfRecords: 1,
+	Records: []decoder.Record{
+		{CommandType: &commandType, CommandResponses: &responses},
+	},
+}
+
+payload, _ := pkg.EncodeCodec12(codecData)
+_ = payload
+```
+
+---
+
 ## 📄 License
 
 [MIT License](LICENSE)
