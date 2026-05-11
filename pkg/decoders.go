@@ -10,6 +10,16 @@ import (
 	tools "github.com/danieljvsa/teltonika-go/tools"
 )
 
+func ensureRead(data []byte, read int, need int) error {
+	if need < 0 {
+		return fmt.Errorf("invalid length requested")
+	}
+	if read+need > len(data) {
+		return fmt.Errorf("data length too short")
+	}
+	return nil
+}
+
 // DecodeCodec8 decodes Teltonika Codec 08 (AVL data) frames containing GPS records with I/O data.
 // Codec 08 is the most common protocol for transmitting vehicle location and telemetry.
 //
@@ -38,8 +48,8 @@ import (
 //	}
 func DecodeCodec8(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
-	if len(data) < 29 {
-		return nil, fmt.Errorf("data length too short")
+	if err := ensureRead(data, read, 1); err != nil {
+		return nil, err
 	}
 
 	numberOfRecords, err := strconv.ParseInt(hex.EncodeToString(data[:read+1]), 16, 64)
@@ -49,21 +59,33 @@ func DecodeCodec8(data []byte, protocol string) (*decoder_domain.CodecData, erro
 	read += 1
 	var records []decoder_domain.Record
 	for range int(numberOfRecords) {
+		if err := ensureRead(data, read, 8); err != nil {
+			return nil, err
+		}
 		timestamp, err := tools.CalcTimestamp(data[read : read+8])
 		if err != nil {
 			return nil, fmt.Errorf("error parsing timestamp")
 		}
 		read += 8
+		if err := ensureRead(data, read, 1); err != nil {
+			return nil, err
+		}
 		priority, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing priority: %w", err)
 		}
 		read += 1
+		if err := ensureRead(data, read, 15); err != nil {
+			return nil, err
+		}
 		gpsData, err := tools.DecodeGPSData(data[read : read+15])
 		if err != nil {
 			return nil, fmt.Errorf("error parsing GPS data")
 		}
 		read += 15
+		if err := ensureRead(data, read, 1); err != nil {
+			return nil, err
+		}
 		eventIO, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing event IO: %w", err)
@@ -119,8 +141,8 @@ func DecodeCodec8(data []byte, protocol string) (*decoder_domain.CodecData, erro
 //	codecData, err := DecodeCodec8Ext(frameData, "TCP")
 func DecodeCodec8Ext(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
-	if len(data) < 29 {
-		return nil, fmt.Errorf("data length too short")
+	if err := ensureRead(data, read, 1); err != nil {
+		return nil, err
 	}
 	numberOfRecords, err := strconv.ParseInt(hex.EncodeToString(data[:read+1]), 16, 64)
 	if err != nil {
@@ -129,21 +151,33 @@ func DecodeCodec8Ext(data []byte, protocol string) (*decoder_domain.CodecData, e
 	read += 1
 	var records []decoder_domain.Record
 	for range int(numberOfRecords) {
+		if err := ensureRead(data, read, 8); err != nil {
+			return nil, err
+		}
 		timestamp, err := tools.CalcTimestamp(data[read : read+8])
 		if err != nil {
 			return nil, fmt.Errorf("error parsing timestamp")
 		}
 		read += 8
+		if err := ensureRead(data, read, 1); err != nil {
+			return nil, err
+		}
 		priority, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing priority: %w", err)
 		}
 		read += 1
+		if err := ensureRead(data, read, 15); err != nil {
+			return nil, err
+		}
 		gpsData, err := tools.DecodeGPSData(data[read : read+15])
 		if err != nil {
 			return nil, fmt.Errorf("error parsing GPS data")
 		}
 		read += 15
+		if err := ensureRead(data, read, 2); err != nil {
+			return nil, err
+		}
 		eventIO, err := strconv.ParseInt(hex.EncodeToString(data[read:read+2]), 16, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing event IO: %w", err)
@@ -196,8 +230,8 @@ func DecodeCodec8Ext(data []byte, protocol string) (*decoder_domain.CodecData, e
 //	codecData, err := DecodeCodec16(frameData, "TCP")
 func DecodeCodec16(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
-	if len(data) < 29 {
-		return nil, fmt.Errorf("data length too short")
+	if err := ensureRead(data, read, 1); err != nil {
+		return nil, err
 	}
 
 	numberOfRecords, err := strconv.ParseInt(hex.EncodeToString(data[:read+1]), 16, 64)
@@ -207,21 +241,33 @@ func DecodeCodec16(data []byte, protocol string) (*decoder_domain.CodecData, err
 	read += 1
 	var records []decoder_domain.Record
 	for range int(numberOfRecords) {
+		if err := ensureRead(data, read, 8); err != nil {
+			return nil, err
+		}
 		timestamp, err := tools.CalcTimestamp(data[read : read+8])
 		if err != nil {
 			return nil, fmt.Errorf("error parsing timestamp")
 		}
 		read += 8
+		if err := ensureRead(data, read, 1); err != nil {
+			return nil, err
+		}
 		priority, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing priority: %w", err)
 		}
 		read += 1
+		if err := ensureRead(data, read, 15); err != nil {
+			return nil, err
+		}
 		gpsData, err := tools.DecodeGPSData(data[read : read+15])
 		if err != nil {
 			return nil, fmt.Errorf("error parsing GPS data")
 		}
 		read += 15
+		if err := ensureRead(data, read, 2); err != nil {
+			return nil, err
+		}
 		eventIO, err := strconv.ParseInt(hex.EncodeToString(data[read:read+2]), 16, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing event IO: %w", err)
@@ -294,14 +340,17 @@ func DecodeCodec16(data []byte, protocol string) (*decoder_domain.CodecData, err
 //	}
 func DecodeCodec12(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
-	if len(data) < 12 {
-		return nil, fmt.Errorf("data length too short")
+	if err := ensureRead(data, read, 2); err != nil {
+		return nil, err
 	}
 	numberOfCommands, err := strconv.ParseInt(hex.EncodeToString(data[:read+1]), 16, 64)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing number of records: %w", err)
 	}
 	read += 1
+	if err := ensureRead(data, read, 1); err != nil {
+		return nil, err
+	}
 	responseTypeNumber, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing response type: %w", err)
@@ -318,11 +367,20 @@ func DecodeCodec12(data []byte, protocol string) (*decoder_domain.CodecData, err
 	read += 1
 	var command_responses []tools_domain.CommandResponse
 	for range int(numberOfCommands) {
+		if err := ensureRead(data, read, 4); err != nil {
+			return nil, err
+		}
 		responseSize, err := strconv.ParseInt(hex.EncodeToString(data[read:read+4]), 16, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing size of message: %w", err)
 		}
 		read += 4
+		if responseSize < 0 {
+			return nil, fmt.Errorf("invalid response size")
+		}
+		if err := ensureRead(data, read, int(responseSize)); err != nil {
+			return nil, err
+		}
 		hexString, message, err := tools.DecodeToHexThenASCII(data[read:read+int(responseSize)], []byte{}, int(responseSize))
 		if err != nil {
 			return nil, fmt.Errorf("error parsing message: %w", err)
@@ -333,6 +391,9 @@ func DecodeCodec12(data []byte, protocol string) (*decoder_domain.CodecData, err
 			HexMessage: hexString,
 		}
 		command_responses = append(command_responses, *commandResponse)
+	}
+	if err := ensureRead(data, read, 1); err != nil {
+		return nil, err
 	}
 	responseType2, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
 	if err != nil {
@@ -395,14 +456,17 @@ func DecodeCodec12(data []byte, protocol string) (*decoder_domain.CodecData, err
 //	}
 func DecodeCodec13(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
-	if len(data) < 12 {
-		return nil, fmt.Errorf("data length too short")
+	if err := ensureRead(data, read, 2); err != nil {
+		return nil, err
 	}
 	numberOfCommands, err := strconv.ParseInt(hex.EncodeToString(data[:read+1]), 16, 64)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing number of records: %w", err)
 	}
 	read += 1
+	if err := ensureRead(data, read, 1); err != nil {
+		return nil, err
+	}
 	responseTypeNumber, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing response type: %w", err)
@@ -420,17 +484,32 @@ func DecodeCodec13(data []byte, protocol string) (*decoder_domain.CodecData, err
 	read += 1
 	var command_responses []tools_domain.CommandResponse
 	for range int(numberOfCommands) {
+		if err := ensureRead(data, read, 4); err != nil {
+			return nil, err
+		}
 		responseSize, err := strconv.ParseInt(hex.EncodeToString(data[read:read+4]), 16, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing size of message: %w", err)
 		}
 		read += 4
+		if responseSize < 8 {
+			return nil, fmt.Errorf("response size too small")
+		}
+		if err := ensureRead(data, read, 8); err != nil {
+			return nil, err
+		}
 		timestamp, err := tools.CalcTimestamp(data[read : read+8])
 		if err != nil {
 			return nil, fmt.Errorf("error parsing timestamp: %w", err)
 		}
 		read += 8
 		commandSize := responseSize - 8
+		if commandSize < 0 {
+			return nil, fmt.Errorf("invalid command size")
+		}
+		if err := ensureRead(data, read, int(commandSize)); err != nil {
+			return nil, err
+		}
 		hexString, message, err := tools.DecodeToHexThenASCII(data[read:read+int(commandSize)], []byte{}, int(commandSize))
 		if err != nil {
 			return nil, fmt.Errorf("error parsing message: %w", err)
@@ -442,6 +521,9 @@ func DecodeCodec13(data []byte, protocol string) (*decoder_domain.CodecData, err
 			HexMessage: hexString,
 		}
 		command_responses = append(command_responses, *commandResponse)
+	}
+	if err := ensureRead(data, read, 1); err != nil {
+		return nil, err
 	}
 	responseType2, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
 	if err != nil {
@@ -503,14 +585,17 @@ func DecodeCodec13(data []byte, protocol string) (*decoder_domain.CodecData, err
 //	}
 func DecodeCodec14(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
-	if len(data) < 12 {
-		return nil, fmt.Errorf("data length too short")
+	if err := ensureRead(data, read, 2); err != nil {
+		return nil, err
 	}
 	numberOfCommands, err := strconv.ParseInt(hex.EncodeToString(data[:read+1]), 16, 64)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing number of records: %w", err)
 	}
 	read += 1
+	if err := ensureRead(data, read, 1); err != nil {
+		return nil, err
+	}
 	responseTypeNumber, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing response type: %w", err)
@@ -527,11 +612,20 @@ func DecodeCodec14(data []byte, protocol string) (*decoder_domain.CodecData, err
 	read += 1
 	var command_responses []tools_domain.CommandResponse
 	for range int(numberOfCommands) {
+		if err := ensureRead(data, read, 4); err != nil {
+			return nil, err
+		}
 		responseSize, err := strconv.ParseInt(hex.EncodeToString(data[read:read+4]), 16, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing size of message: %w", err)
 		}
 		read += 4
+		if responseSize < 8 {
+			return nil, fmt.Errorf("response size too small")
+		}
+		if err := ensureRead(data, read, int(responseSize)); err != nil {
+			return nil, err
+		}
 		imei, err := tools.DecodeIMEI(data[read : read+int(responseSize)])
 		if err != nil {
 			return nil, fmt.Errorf("error parsing IMEI: %w", err)
@@ -548,6 +642,9 @@ func DecodeCodec14(data []byte, protocol string) (*decoder_domain.CodecData, err
 			CommandType: responseType,
 		}
 		command_responses = append(command_responses, *commandResponse)
+	}
+	if err := ensureRead(data, read, 1); err != nil {
+		return nil, err
 	}
 	responseType2, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
 	if err != nil {
@@ -612,14 +709,17 @@ func DecodeCodec14(data []byte, protocol string) (*decoder_domain.CodecData, err
 
 func DecodeCodec15(data []byte, protocol string) (*decoder_domain.CodecData, error) {
 	read := 0
-	if len(data) < 12 {
-		return nil, fmt.Errorf("data length too short")
+	if err := ensureRead(data, read, 2); err != nil {
+		return nil, err
 	}
 	numberOfCommands, err := strconv.ParseInt(hex.EncodeToString(data[:read+1]), 16, 64)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing number of records: %w", err)
 	}
 	read += 1
+	if err := ensureRead(data, read, 1); err != nil {
+		return nil, err
+	}
 	responseTypeNumber, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing response type: %w", err)
@@ -628,22 +728,40 @@ func DecodeCodec15(data []byte, protocol string) (*decoder_domain.CodecData, err
 	read += 1
 	var command_responses []tools_domain.CommandResponse
 	for range int(numberOfCommands) {
+		if err := ensureRead(data, read, 4); err != nil {
+			return nil, err
+		}
 		responseSize, err := strconv.ParseInt(hex.EncodeToString(data[read:read+4]), 16, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing size of message: %w", err)
 		}
 		read += 4
+		if responseSize < 12 {
+			return nil, fmt.Errorf("response size too small")
+		}
+		if err := ensureRead(data, read, 4); err != nil {
+			return nil, err
+		}
 		timestamp, err := tools.CalcTimestampSeconds(data[read : read+4])
 		if err != nil {
 			return nil, fmt.Errorf("error parsing timestamp: %w", err)
 		}
 		read += 4
+		if err := ensureRead(data, read, 8); err != nil {
+			return nil, err
+		}
 		imei, err := tools.DecodeIMEI(data[read : read+8])
 		if err != nil {
 			return nil, fmt.Errorf("error parsing IMEI: %w", err)
 		}
 		read += 8
 		commandSize := responseSize - 12
+		if commandSize < 0 {
+			return nil, fmt.Errorf("invalid command size")
+		}
+		if err := ensureRead(data, read, int(commandSize)); err != nil {
+			return nil, err
+		}
 		hexString, message, err := tools.DecodeToHexThenASCII(data[read:read+int(commandSize)], []byte{}, int(commandSize))
 		if err != nil {
 			return nil, fmt.Errorf("error parsing message: %w", err)
@@ -656,6 +774,9 @@ func DecodeCodec15(data []byte, protocol string) (*decoder_domain.CodecData, err
 			IMEI:       imei,
 		}
 		command_responses = append(command_responses, *commandResponse)
+	}
+	if err := ensureRead(data, read, 1); err != nil {
+		return nil, err
 	}
 	responseType2, err := strconv.ParseInt(hex.EncodeToString(data[read:read+1]), 16, 64)
 	if err != nil {
