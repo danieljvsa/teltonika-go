@@ -11,8 +11,8 @@ import (
 )
 
 func TestDecodeGPSData(t *testing.T) {
-	// Example valid data (hex representation of values)
-	data, _ := hex.DecodeString("F0A9AFC0209CCA800123456789ab")
+	// Example valid data (hex representation of values) - 15 bytes
+	data, _ := hex.DecodeString("F0A9AFC0209CCA80012345678900ab")
 
 	gps, err := tools.DecodeGPSData(data)
 	if err != nil {
@@ -34,7 +34,7 @@ func TestDecodeGPSData(t *testing.T) {
 	expectedAltitude := int64(0x0123)
 	expectedAngle := int64(0x4567)
 	expectedSatelites := int64(0x89)
-	expectedSpeed := int64(0xab)
+	expectedSpeed := int64(0x00ab)
 
 	if gps.Latitude != expectedLatitude {
 		t.Errorf("Latitude: expected %v, got %v", expectedLatitude, gps.Latitude)
