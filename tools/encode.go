@@ -41,7 +41,7 @@ func EncodeTimestampSeconds(timestamp *time.Time) ([]byte, error) {
 	return data, nil
 }
 
-// EncodeGPSData converts GPS data into the 14-byte binary Teltonika representation.
+// EncodeGPSData converts GPS data into the 15-byte binary Teltonika representation.
 func EncodeGPSData(gpsData *tool_domain.GPSData) ([]byte, error) {
 	if gpsData == nil {
 		return nil, fmt.Errorf("gps data is nil")
@@ -63,17 +63,17 @@ func EncodeGPSData(gpsData *tool_domain.GPSData) ([]byte, error) {
 	if gpsData.Satelites < 0 || gpsData.Satelites > 255 {
 		return nil, fmt.Errorf("satellites out of uint8 range")
 	}
-	if gpsData.Speed < 0 || gpsData.Speed > 255 {
-		return nil, fmt.Errorf("speed out of uint8 range")
+	if gpsData.Speed < 0 || gpsData.Speed > 65535 {
+		return nil, fmt.Errorf("speed out of uint16 range")
 	}
 
-	data := make([]byte, 14)
+	data := make([]byte, 15)
 	binary.BigEndian.PutUint32(data[0:4], uint32(int32(longitudeScaled)))
 	binary.BigEndian.PutUint32(data[4:8], uint32(int32(latitudeScaled)))
 	binary.BigEndian.PutUint16(data[8:10], uint16(gpsData.Altitude))
 	binary.BigEndian.PutUint16(data[10:12], uint16(gpsData.Angle))
 	data[12] = byte(gpsData.Satelites)
-	data[13] = byte(gpsData.Speed)
+	binary.BigEndian.PutUint16(data[13:15], uint16(gpsData.Speed))
 	return data, nil
 }
 
