@@ -8,19 +8,19 @@ import (
 	tool_domain "github.com/danieljvsa/teltonika-go/internal/tool"
 )
 
-// DecodeGPSData parses a 14-byte binary GPS data block from Teltonika protocol
+// DecodeGPSData parses a 15-byte binary GPS data block from Teltonika protocol
 // and extracts latitude, longitude, altitude, angle, satellite count, and speed.
 //
-// Data format (14 bytes):
+// Data format (15 bytes):
 //   - Bytes 0-3: Longitude (int32, degrees * 10^7)
 //   - Bytes 4-7: Latitude (int32, degrees * 10^7)
 //   - Bytes 8-9: Altitude (int16, meters)
 //   - Bytes 10-11: Angle (int16, degrees 0-359)
 //   - Byte 12: Number of satellites
-//   - Byte 13: Speed (1 byte)
+//   - Bytes 13-14: Speed (uint16, km/h)
 //
 // Parameters:
-//   - data: exactly 14 bytes of GPS data
+//   - data: exactly 15 bytes of GPS data
 //
 // Returns:
 //   - *tool_domain.GPSData: pointer to decoded GPS information
@@ -33,7 +33,7 @@ import (
 //		fmt.Printf("Location: %f, %f\n", gpsData.Latitude, gpsData.Longitude)
 //	}
 func DecodeGPSData(data []byte) (*tool_domain.GPSData, error) {
-	if len(data) < 14 {
+	if len(data) < 15 {
 		return nil, fmt.Errorf("invalid data length %d", len(data))
 	}
 
@@ -59,7 +59,7 @@ func DecodeGPSData(data []byte) (*tool_domain.GPSData, error) {
 		return nil, err
 	}
 
-	speed, err := strconv.ParseInt(hex.EncodeToString(data[13:14]), 16, 64)
+	speed, err := strconv.ParseInt(hex.EncodeToString(data[13:15]), 16, 64)
 	if err != nil {
 		return nil, err
 	}

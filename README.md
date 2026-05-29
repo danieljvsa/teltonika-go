@@ -20,23 +20,24 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 - Validate and interpret Teltonika TCP/UDP headers  
 - Graceful error handling with structured responses  
 - Minimal dependencies, pure Go
-- Comprehensive test coverage with 30+ unit tests
+- Comprehensive test coverage with 50+ unit tests
 
 ---
 
 ## 🆕 Changes Introduced
 
-### v0.4.0
+### v0.5.0
+- 🐛 **Fixed GPS speed decoding** - Corrected GPS block size from 14 to 15 bytes per Teltonika spec; speed is now parsed as uint16 instead of uint8
+- 🧹 **Removed stray padding byte** - Eliminated erroneous `0x00` byte after GPS data in encoder that caused field misalignment
 - 🆕 **Added Codec 12, 13, 14, 15 support** - Full support for command response codecs with command handling
 - 🧹 **Production code cleanup** - Removed all debug print statements from decoder functions
 - ✅ **Comprehensive test coverage** - Added extensive unit tests for all codec types and tool functions
 - 🛡️ **Improved error handling** - Added bounds checking in header decoder to prevent panics on invalid data
 - ⏰ **Enhanced timestamp support** - Added CalcTimestampSeconds and CalcTimestampSecondsBigEndian functions for 4-byte second timestamps
 - 📦 **Better data structures** - Improved Record model with pointer fields for optional data support
-
-### Previous Changes
-- 🎧 Added support for decoding with Codec 16  
-- 🧬 Updated internal types to support `generation_type` type workflows
+- 🎧 **Added Codec 16 decoder support** - Support for GPRS/IQ frames with generation type
+- 🧬 **Updated internal types** - Support for `generation_type` type workflows
+- 📝 **Updated documentation** - Enhanced README with usage examples and project structure
 
 ---
 
