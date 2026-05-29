@@ -82,7 +82,6 @@ func encodeAVLCodec(codecData *decoder_domain.CodecData, codecID byte) ([]byte, 
 			return nil, err
 		}
 		buffer.Write(gpsBytes)
-		buffer.WriteByte(0x00)
 
 		switch codecID {
 		case 0x08:
