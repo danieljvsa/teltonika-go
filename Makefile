@@ -1,5 +1,14 @@
 build:
-	go build -o bin/main ./cmd/teltonika_go/main.go
+	go build ./...
 
 test-all:
 	go test -v ./test
+
+test:
+	go test ./...
+
+vet:
+	go vet ./...
+
+fmt:
+	gofmt -l .

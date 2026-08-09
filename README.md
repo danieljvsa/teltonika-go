@@ -7,12 +7,13 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 
 ## 📦 Version
 
-**v0.5.0**
+**v0.6.0**
 
 ---
 
 ## ✨ Features
 
+- Decode and encode from the **public package** `github.com/danieljvsa/teltonika-go/public` (no `internal/` imports needed)
 - Decode login packets  
 - Parse AVL records using Codecs 08, 8E, 16, 12, 13, 14, and 15
 - Encode AVL records and command responses for Codecs 08, 8E, 16, 12, 13, 14, and 15
@@ -20,11 +21,17 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 - Validate and interpret Teltonika TCP/UDP headers  
 - Graceful error handling with structured responses  
 - Minimal dependencies, pure Go
-- Comprehensive test coverage with 50+ unit tests
+- Comprehensive test coverage including root-API round-trip and malformed-input tests
 
 ---
 
 ## 🆕 Changes Introduced
+
+### v0.6.0
+- 🏗️ **Public package API** - The `public` package exposes `Decode`/`Encode`, `Packet`, `AVLRecord`, `GPSData`, `IOElement`, `Command`, and `CommandResponse` types directly
+- 🧬 **Backward compatibility preserved** - `pkg/` and `tools/` keep their existing APIs as thin shims over the public package, so existing code keeps compiling
+- ✅ **External-consumer proof** - Public-package tests are written as an external test package and only import the public package
+- 📝 **Updated README** with public-package examples and runnable `examples/` programs
 
 ### v0.5.0
 - 🐛 **Fixed GPS speed decoding** - Corrected GPS block size from 14 to 15 bytes per Teltonika spec; speed is now parsed as uint16 instead of uint8
@@ -48,6 +55,19 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 ├── LICENSE             # License (MIT)
 ├── Makefile            # Automation tasks
 ├── README.md           # Project documentation
+├── public/             # Public package: the modern public API
+│   ├── decode.go       # Decode, decode helpers
+│   ├── doc.go          # Package documentation
+│   ├── encode.go       # Encode, encode helpers
+│   ├── gps.go          # GPS block encode/decode + CRC
+│   ├── header.go       # header helpers
+│   ├── models.go       # Public Packet/Record/Command types
+│   └── teltonika_test.go
+├── examples/           # Runnable example programs
+│   ├── decode/
+│   │   └── main.go     # Decode a Codec 08 frame
+│   └── encode/
+│       └── main.go     # Encode Codec 08 + login frames
 ├── cmd/
 │   └── teltonika_go/
 │       └── main.go     # CLI entry point
@@ -62,7 +82,7 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 │   │   └── models.go   # I/O element models
 │   └── tool/
 │       └── models.go   # Utility data types
-├── pkg/                # Public API surface
+├── pkg/                # Legacy API surface (shims over the public package)
 │   ├── decoders.go
 │   ├── encoders.go
 │   ├── headers.go
@@ -98,6 +118,85 @@ go get github.com/danieljvsa/teltonika-go
 ---
 
 ## 📄 Example Usage
+
+### Decode a full frame with the public package
+
+```go
+package main
+
+import (
+	"fmt"
+
+	teltonika "github.com/danieljvsa/teltonika-go/public"
+)
+
+func main() {
+	// Raw Teltonika TCP login or data frame bytes (e.g. from a socket read).
+	var frame []byte // = <device bytes>
+
+	packet, err := teltonika.Decode(frame)
+	if err != nil {
+		fmt.Println("decode error:", err)
+		return
+	}
+
+	switch packet.Kind {
+	case teltonika.KindLogin:
+		fmt.Printf("Login from IMEI %s\n", packet.IMEI)
+	case teltonika.KindData:
+		fmt.Printf("Codec 0x%02X, %d records\n", byte(packet.Codec), len(packet.Records))
+		for _, rec := range packet.Records {
+			fmt.Printf("  lat=%.6f lon=%.6f speed=%d\n", rec.GPS.Latitude, rec.GPS.Longitude, rec.GPS.Speed)
+		}
+	}
+}
+```
+
+### Encode a frame with the public package
+
+```go
+package main
+
+import (
+	"time"
+
+	teltonika "github.com/danieljvsa/teltonika-go/public"
+)
+
+func main() {
+	packet := &teltonika.Packet{
+		Kind:     teltonika.KindData,
+		Protocol: teltonika.ProtocolTCP,
+		Codec:    teltonika.Codec8,
+		Records: []teltonika.AVLRecord{
+			{
+				Timestamp: time.Now().UTC(),
+				Priority:  1,
+				EventIO:   5,
+				GPS: teltonika.GPSData{
+					Latitude:   52.520008,
+					Longitude:  13.404954,
+					Altitude:   120,
+					Angle:      25,
+					Satellites: 7,
+					Speed:      60,
+				},
+				IOElements: []teltonika.IOElement{{ID: 1, Value: "01"}},
+			},
+		},
+	}
+
+	frame, err := teltonika.Encode(packet)
+	if err != nil {
+		panic(err)
+	}
+	_ = frame // ready to send over the socket
+}
+```
+
+### Legacy `pkg` API
+
+The `pkg` package keeps its previous API and now delegates to the root package.
 
 ```go
 package main
