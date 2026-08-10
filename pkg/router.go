@@ -29,9 +29,11 @@ func LoginDecoder(request []byte) *decoder_domain.CodecDecoded {
 }
 
 // TramDecoder parses a complete AVL data packet carrying an AVL or command
-// codec and returns a CodecDecoded wrapper.
+// codec and returns a CodecDecoded wrapper. It decodes leniently, matching
+// the legacy behavior that never validated the UDP declared length; truncated
+// official captures and device over-declared lengths are accepted.
 func TramDecoder(request []byte) *decoder_domain.CodecDecoded {
-	packet, err := teltonika.Decode(request)
+	packet, err := teltonika.Decode(request, teltonika.WithLenientUDPLength())
 	if err != nil {
 		return &decoder_domain.CodecDecoded{Response: nil, Error: err}
 	}

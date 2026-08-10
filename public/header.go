@@ -17,7 +17,7 @@ func isTCP(data []byte) bool {
 }
 
 // decodeHeader parses the transport header at the start of a data packet.
-func decodeHeader(data []byte) (*decodedHeader, error) {
+func decodeHeader(data []byte, o decodeOptions) (*decodedHeader, error) {
 	if len(data) < 8 {
 		return nil, fmt.Errorf("header is too small")
 	}
@@ -41,11 +41,12 @@ func decodeHeader(data []byte) (*decodedHeader, error) {
 	// UDP header: length(2) packetId(2) [version skipped] avlId(1)
 	//            imeiLen(2) imei(...)
 	length := int64(binary.BigEndian.Uint16(data[0:2]))
-	// The declared length normally equals len(data)-2, but real devices and
-	// truncated captures may declare more. Only reject when the frame
-	// carries more bytes than the header declares, i.e. a corrupt length.
-	if int(length) < len(data)-2 {
-		return nil, fmt.Errorf("UDP length mismatch: declared %d is smaller than frame %d", length, len(data)-2)
+	// The declared length normally equals len(data)-2. By default the match
+	// must be exact. Devices and truncated captures may declare more than they
+	// deliver, which is tolerated only in lenient mode. A declared length
+	// smaller than the delivered frame is always corrupt.
+	if int(length) < len(data)-2 || (!o.lenientUDPLength && int(length) > len(data)-2) {
+		return nil, fmt.Errorf("UDP length mismatch: declared %d, actual %d", length, len(data)-2)
 	}
 	read := 2
 

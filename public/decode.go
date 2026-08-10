@@ -8,11 +8,27 @@ import (
 	tools "github.com/danieljvsa/teltonika-go/tools"
 )
 
+// DecodeOption configures frame decoding.
+type DecodeOption func(*decodeOptions)
+
+type decodeOptions struct {
+	lenientUDPLength bool
+}
+
+// WithLenientUDPLength relaxes UDP frame validation to a lower-bound length
+// check. By default the declared UDP length must exactly equal the delivered
+// frame. With this option a declared length that is larger than the delivered
+// datagram is also accepted; this covers truncated captures such as the
+// official wiki codec 16 example and device firmware that over-declares.
+func WithLenientUDPLength() DecodeOption {
+	return func(o *decodeOptions) { o.lenientUDPLength = true }
+}
+
 // Decode parses a complete Teltonika frame (login or data, TCP or UDP)
 // and returns a Packet containing only public types.
 //
 // This is the main entry point used by external applications.
-func Decode(data []byte) (*Packet, error) {
+func Decode(data []byte, opts ...DecodeOption) (*Packet, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("empty data")
 	}
@@ -20,7 +36,7 @@ func Decode(data []byte) (*Packet, error) {
 	if isLoginFrame(data) {
 		return DecodeLogin(data)
 	}
-	return DecodeData(data)
+	return DecodeData(data, opts...)
 }
 
 // DecodeLogin is an alias for Decode that matches the legacy LoginDecoder
@@ -63,12 +79,16 @@ func isLoginFrame(data []byte) bool {
 
 // DecodeData parses a complete AVL data packet (TCP or UDP transport)
 // and returns a Packet containing only public types.
-func DecodeData(data []byte) (*Packet, error) {
+func DecodeData(data []byte, opts ...DecodeOption) (*Packet, error) {
+	o := decodeOptions{}
+	for _, opt := range opts {
+		opt(&o)
+	}
 	if len(data) == 0 {
 		return nil, fmt.Errorf("empty data")
 	}
 
-	header, err := decodeHeader(data)
+	header, err := decodeHeader(data, o)
 	if err != nil {
 		return nil, err
 	}
@@ -454,13 +474,19 @@ func decodeCommandResponses(payload []byte, protocol Protocol, withTimestamp boo
 		responses = append(responses, cmd)
 	}
 
-	if len(payload) < read+1 {
-		return nil, fmt.Errorf("data length too short")
+	// All bytes after the responses are the trailing command count and, for
+	// TCP frames, the four-byte CRC. Reject anything else.
+	expectedRemainder := 1
+	if protocol == ProtocolTCP {
+		expectedRemainder = 5
+	}
+	if remaining := len(payload) - read; remaining != expectedRemainder {
+		return nil, fmt.Errorf("unexpected trailing command data: %d bytes", remaining)
 	}
 	trailing := int64(payload[read])
 	read += 1
 	if int64(numberOfCommands) != trailing {
-		return nil, fmt.Errorf("response type mismatch: %d != %d", numberOfCommands, trailing)
+		return nil, fmt.Errorf("command count mismatch: initial %d, trailing %d", numberOfCommands, trailing)
 	}
 
 	return []Command{{Type: commandType, Responses: responses}}, nil

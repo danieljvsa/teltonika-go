@@ -70,6 +70,45 @@ func TestEncodeRejectsMultipleCommandGroups(t *testing.T) {
 	}
 }
 
+// TestDecodeRejectsCommandBytesAfterTrailingCount verifies that a command
+// payload is fully consumed: only the trailing count (plus TCP CRC) may follow
+// the responses. UDP has no CRC guard, so stray trailing bytes must be caught
+// by the decoder itself.
+func TestDecodeRejectsCommandBytesAfterTrailingCount(t *testing.T) {
+	packet := &teltonika.Packet{
+		Kind:     teltonika.KindData,
+		Protocol: teltonika.ProtocolUDP,
+		Codec:    teltonika.Codec12,
+		Header: teltonika.Header{
+			UDP: &teltonika.HeaderUDP{},
+		},
+		Commands: []teltonika.Command{
+			{Type: "Response", Responses: []teltonika.CommandResponse{{Response: "12"}}},
+		},
+	}
+
+	frame, err := teltonika.Encode(packet)
+	if err != nil {
+		t.Fatalf("Encode failed: %v", err)
+	}
+
+	// UDP frame: length(2) packetId(2) version(1) avlPacketId(1) imeiLen(2)
+	// imei(0) codec(1) codec-data. The empty IMEI keeps the codec at offset 8.
+	if len(frame) < 10 || frame[8] != byte(teltonika.Codec12) {
+		t.Fatalf("unexpected UDP frame layout: % X", frame)
+	}
+	payload := append([]byte(nil), frame[9:]...)
+
+	if _, err := teltonika.DecodeCodecData(payload, teltonika.Codec12, teltonika.ProtocolUDP); err != nil {
+		t.Fatalf("valid payload rejected: %v", err)
+	}
+
+	extra := append(payload, 0x00)
+	if _, err := teltonika.DecodeCodecData(extra, teltonika.Codec12, teltonika.ProtocolUDP); err == nil {
+		t.Fatal("expected bytes after trailing count to be rejected")
+	}
+}
+
 func TestCodec13ExactRoundTrip(t *testing.T) {
 	ts := time.Unix(1701000000, 123000000).UTC()
 	packet := commandPacket(teltonika.Codec13, nil, &ts, nil, "getinfo")

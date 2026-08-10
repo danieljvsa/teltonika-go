@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strconv"
 
 	tools "github.com/danieljvsa/teltonika-go/tools"
 )
@@ -495,6 +496,13 @@ func resolveCommandType(codec CodecID, commandType string) (byte, error) {
 		}
 		return 5, nil
 	default:
+		// Codec 15 may carry any raw response type byte; decoding preserves it
+		// as the decimal string so it can be round-tripped back to the byte.
+		if codec == Codec15 {
+			if v, err := strconv.Atoi(commandType); err == nil && v >= 0 && v <= 255 {
+				return byte(v), nil
+			}
+		}
 		return 0, fmt.Errorf("unknown command type: %s", commandType)
 	}
 }

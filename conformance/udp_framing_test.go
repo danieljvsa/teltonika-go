@@ -68,6 +68,24 @@ func TestDecodeRejectsUDPLengthMismatch(t *testing.T) {
 	}
 }
 
+// TestDecodeRejectsUDPExcessDeclaredLengthByDefault locks in the strict
+// default: a declared UDP length larger than the delivered frame is rejected
+// unless WithLenientUDPLength is used.
+func TestDecodeRejectsUDPExcessDeclaredLengthByDefault(t *testing.T) {
+	valid, err := teltonika.Encode(udpCodec8Packet())
+	if err != nil {
+		t.Fatalf("Encode failed: %v", err)
+	}
+
+	frame := append([]byte(nil), valid...)
+	length := binary.BigEndian.Uint16(frame[0:2])
+	binary.BigEndian.PutUint16(frame[0:2], length+1)
+
+	if _, err := teltonika.Decode(frame); err == nil {
+		t.Fatal("expected strict UDP length mismatch error by default")
+	}
+}
+
 // TestDecodeUDPAcceptsLargerDeclaredLength locks in the lenient behavior for
 // declared lengths that exceed the delivered frame. Real devices and truncated
 // captures (such as the official wiki codec 16 example) declare more bytes
@@ -82,7 +100,7 @@ func TestDecodeUDPAcceptsLargerDeclaredLength(t *testing.T) {
 	length := binary.BigEndian.Uint16(frame[0:2])
 	binary.BigEndian.PutUint16(frame[0:2], length+1)
 
-	if _, err := teltonika.Decode(frame); err != nil {
+	if _, err := teltonika.Decode(frame, teltonika.WithLenientUDPLength()); err != nil {
 		t.Fatalf("expected decode with larger declared length, got error: %v", err)
 	}
 }

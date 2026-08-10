@@ -18,11 +18,9 @@ func TestDecodeOfficialCodec8Fixture(t *testing.T) {
 }
 
 // TestRoundTripOfficialFixtures decodes each known-good fixture, re-encodes it
-// and compares the complete frame byte for byte. Codec 15 is covered by a
-// dedicated decode-only test because firmware frames use a raw response type
-// byte (0x0B) that the encoder cannot reproduce. Codec 16 UDP is likewise
-// covered decode-only: the fixture is the truncated official wiki packet whose
-// declared length (347) points beyond the delivered data, so a byte-identical
+// and compares the complete frame byte for byte. The codec 16 UDP fixture is
+// covered decode-only: it is the truncated official wiki packet whose declared
+// length (347) points beyond the delivered data, so a byte-identical
 // re-encode is impossible.
 func TestRoundTripOfficialFixtures(t *testing.T) {
 	fixtures := []string{
@@ -32,6 +30,7 @@ func TestRoundTripOfficialFixtures(t *testing.T) {
 		"codec12-command.hex",
 		"codec13-response.hex",
 		"codec14-response.hex",
+		"codec15-response.hex",
 		"codec8-udp.hex",
 		"codec8e-udp.hex",
 	}
@@ -68,7 +67,7 @@ func TestDecodeOfficialCodec15Fixture(t *testing.T) {
 }
 
 func TestDecodeOfficialCodec16UDPFixture(t *testing.T) {
-	packet, err := teltonika.Decode(readFixture(t, "codec16-udp.hex"))
+	packet, err := teltonika.Decode(readFixture(t, "codec16-udp.hex"), teltonika.WithLenientUDPLength())
 	if err != nil {
 		t.Fatalf("Decode failed: %v", err)
 	}
