@@ -1,6 +1,6 @@
 # Teltonika Go Parser
 
-A lightweight Go library to decode and work with binary data from **Teltonika GPS devices**, including login and AVL data packets (Codecs 08, 8E, etc.).
+A lightweight Go library to decode and work with binary data from **Teltonika GPS devices**, including login and AVL data frames (Codecs 08, 8E, 12, 13, 14, 15 and 16) over TCP and UDP.
 This version uses a clean, idiomatic Go project layout to separate concerns between command-line usage, internal logic, and reusable packages.
 
 ---
@@ -14,14 +14,14 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 ## ✨ Features
 
 - Decode and encode from the **public package** `github.com/danieljvsa/teltonika-go/public` (no `internal/` imports needed)
-- Decode login packets  
-- Parse AVL records using Codecs 08, 8E, 16, 12, 13, 14, and 15
+- Decode login packets
+- Parse AVL records using Codecs 08, 8E, 16, 12, 13, 14, and 15 (AVL and command codecs)
 - Encode AVL records and command responses for Codecs 08, 8E, 16, 12, 13, 14, and 15
-- Support for command response codecs with command handling
-- Validate and interpret Teltonika TCP/UDP headers  
-- Graceful error handling with structured responses  
+- Strict Teltonika TCP/UDP framing validation (declared lengths, record counts, CRC)
+- Decoding and encoding options (`WithStrictIMEI`, `WithLenientUDPLength`)
+- Graceful error handling with structured responses
 - Minimal dependencies, pure Go
-- Comprehensive test coverage including root-API round-trip and malformed-input tests
+- Comprehensive test coverage including a protocol-conformance suite and decoder fuzz tests
 
 ---
 
@@ -87,17 +87,16 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 │   ├── encoders.go
 │   ├── headers.go
 │   └── ios.go
+├── conformance/        # Protocol-conformance tests with official fixtures
+│   ├── testdata/       # Golden wire frames (see testdata/README.md)
+│   └── ...
 ├── test/               # Test suite
-│   ├── decorders_test.go
-│   ├── ios_test.go
-│   ├── main_test.go
-│   └── tools_test.go
-└── tools/              # Teltonika protocol utilities
-    ├── crc16.go
-    ├── gps.go
-    ├── login.go
-    ├── protocol.go
-    └── timestamp.go
+├── tools/              # Teltonika protocol utilities
+│   ├── crc16.go
+│   ├── gps.go
+│   ├── login.go
+│   ├── protocol.go
+│   └── timestamp.go
 ```
 
 ---
@@ -106,7 +105,7 @@ This version uses a clean, idiomatic Go project layout to separate concerns betw
 
 ### Requirements
 
-- Go 1.20+
+- Go 1.22+ (see `go.mod`)
 - Teltonika GPS device (e.g., FMB920, FMM125)
 
 ### Installation
@@ -152,6 +151,9 @@ func main() {
 }
 ```
 
+Blocks of multiple frames arriving over TCP can be split with the framing
+helpers in `tools/` (e.g. `tools.IsValidTram`).
+
 ### Encode a frame with the public package
 
 ```go
@@ -194,23 +196,70 @@ func main() {
 }
 ```
 
+The encoder writes the transport header, codec id, trailing record count and
+(the TCP case) CRC for you. UDP frames additionally require a `Header.UDP`
+with a valid `PacketID`, `AVLPacketID`, and optionally `IMEI`.
+
+### Decoding and encoding options
+
+`Decode` and `Encode` both accept options:
+
+```go
+packet, err := teltonika.Decode(frame, teltonika.WithLenientUDPLength())
+```
+
+- `WithLenientUDPLength()` - by default a UDP frame is rejected unless its
+  declared length exactly matches the delivered datagram. Some devices and
+  truncated official captures over-declare; this option accepts a declared
+  length larger than the datagram (the declared length can never be smaller).
+
+```go
+frame, err := teltonika.Encode(loginPacket, teltonika.WithStrictIMEI())
+```
+
+- `WithStrictIMEI()` - by default login encoding only rejects empty or
+  oversized identifiers, matching legacy behavior. With this option the IMEI
+  must be exactly 15 decimal digits.
+
+### Command codecs and Codec 15 raw response types
+
+Command codecs 12-15 carry responses. Codec 15 frames may use a raw response
+type byte (e.g. `0x0B`) that firmware emits; decoding preserves the byte as
+its decimal string (`"11"`) and encoding maps it back, so these frames
+round-trip byte-for-byte.
+
+```go
+packet := &teltonika.Packet{
+	Kind:     teltonika.KindData,
+	Protocol: teltonika.ProtocolTCP,
+	Codec:    teltonika.Codec15,
+	Commands: []teltonika.Command{
+		{
+			Type: "11", // raw response type byte 0x0B
+			Responses: []teltonika.CommandResponse{
+				{IMEI: "0123456789123456", Response: "Hello!\n"},
+			},
+		},
+	},
+}
+```
+
 ### Legacy `pkg` API
 
-The `pkg` package keeps its previous API and now delegates to the root package.
+The `pkg` package keeps its previous API and now delegates to the public package.
 
 ```go
 package main
 
 import (
 	"fmt"
-	pkg "github.com/danieljvsa/teltonika-go/pkg" // For general functions
-	tools "github.com/danieljvsa/teltonika-go/tools" // For general functions
+	pkg "github.com/danieljvsa/teltonika-go/pkg"
 )
 
 func main() {
 	// Replace with actual Teltonika login and AVL packet bytes
 	rawLogin := []byte{ /* login packet */ }
-	rawTram := []byte{ /* AVL packet */ }
+	rawFrame := []byte{ /* AVL frame */ }
 
 	// Decode login packet
 	login := pkg.LoginDecoder(rawLogin)
@@ -220,222 +269,35 @@ func main() {
 		fmt.Printf("Login decoded: %+v\n", login.Response)
 	}
 
-	// Decode AVL/tram packet
-	tram := pkg.TramDecoder(rawTram)
-	if tram.Error != nil {
-		fmt.Println("Tram decode error:", tram.Error)
+	// Decode AVL/data frame
+	frame := pkg.TramDecoder(rawFrame)
+	if frame.Error != nil {
+		fmt.Println("Frame decode error:", frame.Error)
 	} else {
-		fmt.Printf("Tram decoded: %+v\n", tram.Response)
+		fmt.Printf("Frame decoded: %+v\n", frame.Response)
 	}
 }
 ```
+
+For new code, prefer the `public` package. The legacy `pkg` API decodes with
+lenient UDP length handling to remain backward compatible.
 
 ---
 
-## 🧩 Encoding Trams
+## 🧪 Testing
 
-The encoder mirrors the decoder structure: you build `CodecData` with records, then call an encoder for the codec you want. The returned payload contains the record count, records, the trailing record count, and the CRC (ready to be wrapped in a TCP/UDP header).
-
-```go
-package main
-
-import (
-	"time"
-
-	decoder "github.com/danieljvsa/teltonika-go/internal/decoder"
-	io_domain "github.com/danieljvsa/teltonika-go/internal/io"
-	tool_domain "github.com/danieljvsa/teltonika-go/internal/tool"
-	pkg "github.com/danieljvsa/teltonika-go/pkg"
-)
-
-func main() {
-	ts := time.Now().UTC()
-	priority := int64(1)
-	eventIO := int64(5)
-
-	record := decoder.Record{
-		Timestamp: &ts,
-		Priority:  &priority,
-		GPSData: &tool_domain.GPSData{
-			Latitude:  52.520008,
-			Longitude: 13.404954,
-			Altitude:  120,
-			Angle:     25,
-			Satelites: 7,
-			Speed:     60,
-		},
-		EventIO: &eventIO,
-		IOs: &[]io_domain.IOData{
-			{IO: 1, Value: "01"},
-		},
-	}
-
-	codecData := &decoder.CodecData{
-		NumberOfRecords: 1,
-		Records:         []decoder.Record{record},
-	}
-
-	payload, _ := pkg.EncodeCodec8(codecData)
-	_ = payload // wrap with header & codec ID if sending over TCP/UDP
-}
+```bash
+go test ./...
+go test -race ./...
+go vet ./...
+go test -run=^$ -fuzz=^FuzzDecodeNeverPanics$ -fuzztime=30s ./conformance
+go test -run=^$ -fuzz=^FuzzDecodeLoginNeverPanics$ -fuzztime=30s ./conformance
+go test -run=^$ -fuzz=^FuzzDecodeCodecDataNeverPanics$ -fuzztime=30s ./conformance
 ```
 
-### Command Response Encoding
-
-```go
-commandType := "Response"
-responses := []tool_domain.CommandResponse{
-	{Response: "OK"},
-}
-
-codecData := &decoder.CodecData{
-	NumberOfRecords: 1,
-	Records: []decoder.Record{
-		{CommandType: &commandType, CommandResponses: &responses},
-	},
-}
-
-payload, _ := pkg.EncodeCodec12(codecData)
-_ = payload
-```
-
----
-
-## 🧩 Encoding Trams
-
-The encoder mirrors the decoder structure: you build `CodecData` with records, then call an encoder for the codec you want. The returned payload contains the record count, records, the trailing record count, and the CRC (ready to be wrapped in a TCP/UDP header).
-
-```go
-package main
-
-import (
-	"time"
-
-	decoder "github.com/danieljvsa/teltonika-go/internal/decoder"
-	io_domain "github.com/danieljvsa/teltonika-go/internal/io"
-	tool_domain "github.com/danieljvsa/teltonika-go/internal/tool"
-	pkg "github.com/danieljvsa/teltonika-go/pkg"
-)
-
-func main() {
-	ts := time.Now().UTC()
-	priority := int64(1)
-	eventIO := int64(5)
-
-	record := decoder.Record{
-		Timestamp: &ts,
-		Priority:  &priority,
-		GPSData: &tool_domain.GPSData{
-			Latitude:  52.520008,
-			Longitude: 13.404954,
-			Altitude:  120,
-			Angle:     25,
-			Satelites: 7,
-			Speed:     60,
-		},
-		EventIO: &eventIO,
-		IOs: &[]io_domain.IOData{
-			{IO: 1, Value: "01"},
-		},
-	}
-
-	codecData := &decoder.CodecData{
-		NumberOfRecords: 1,
-		Records:         []decoder.Record{record},
-	}
-
-	payload, _ := pkg.EncodeCodec8(codecData)
-	_ = payload // wrap with header & codec ID if sending over TCP/UDP
-}
-```
-
-### Command Response Encoding
-
-```go
-commandType := "Response"
-responses := []tool_domain.CommandResponse{
-	{Response: "OK"},
-}
-
-codecData := &decoder.CodecData{
-	NumberOfRecords: 1,
-	Records: []decoder.Record{
-		{CommandType: &commandType, CommandResponses: &responses},
-	},
-}
-
-payload, _ := pkg.EncodeCodec12(codecData)
-_ = payload
-```
-
----
-
-## 🧩 Encoding Trams
-
-The encoder mirrors the decoder structure: you build `CodecData` with records, then call an encoder for the codec you want. The returned payload contains the record count, records, the trailing record count, and the CRC (ready to be wrapped in a TCP/UDP header).
-
-```go
-package main
-
-import (
-	"time"
-
-	decoder "github.com/danieljvsa/teltonika-go/internal/decoder"
-	io_domain "github.com/danieljvsa/teltonika-go/internal/io"
-	tool_domain "github.com/danieljvsa/teltonika-go/internal/tool"
-	pkg "github.com/danieljvsa/teltonika-go/pkg"
-)
-
-func main() {
-	ts := time.Now().UTC()
-	priority := int64(1)
-	eventIO := int64(5)
-
-	record := decoder.Record{
-		Timestamp: &ts,
-		Priority:  &priority,
-		GPSData: &tool_domain.GPSData{
-			Latitude:  52.520008,
-			Longitude: 13.404954,
-			Altitude:  120,
-			Angle:     25,
-			Satelites: 7,
-			Speed:     60,
-		},
-		EventIO: &eventIO,
-		IOs: &[]io_domain.IOData{
-			{IO: 1, Value: "01"},
-		},
-	}
-
-	codecData := &decoder.CodecData{
-		NumberOfRecords: 1,
-		Records:         []decoder.Record{record},
-	}
-
-	payload, _ := pkg.EncodeCodec8(codecData)
-	_ = payload // wrap with header & codec ID if sending over TCP/UDP
-}
-```
-
-### Command Response Encoding
-
-```go
-commandType := "Response"
-responses := []tool_domain.CommandResponse{
-	{Response: "OK"},
-}
-
-codecData := &decoder.CodecData{
-	NumberOfRecords: 1,
-	Records: []decoder.Record{
-		{CommandType: &commandType, CommandResponses: &responses},
-	},
-}
-
-payload, _ := pkg.EncodeCodec12(codecData)
-_ = payload
-```
+The `conformance/` suite decodes and re-encodes official Teltonika wire
+fixtures stored in `conformance/testdata/` (see `conformance/testdata/README.md`
+for provenance).
 
 ---
 
@@ -456,4 +318,3 @@ Please fork the repo and submit a pull request or open an issue.
 
 **Daniel Sá**  
 [github.com/danieljvsa](https://github.com/danieljvsa)
-

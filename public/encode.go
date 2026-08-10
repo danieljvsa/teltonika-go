@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"strconv"
 
 	tools "github.com/danieljvsa/teltonika-go/tools"
@@ -123,8 +124,8 @@ func wrapFrame(packet *Packet, codec byte, payload []byte) ([]byte, error) {
 		// UDP frame = length(2) packetId(2) version(1) avlPacketId(1)
 		//            imeiLen(2) imei + codec + payload (no CRC)
 		h := packet.Header.UDP
-		if h == nil {
-			return nil, fmt.Errorf("UDP packets require a UDP header")
+		if err := validateUDPHeader(h); err != nil {
+			return nil, err
 		}
 		imei := []byte(h.IMEI)
 		imeiLen := uint16(h.IMEILength)
@@ -156,6 +157,30 @@ func wrapFrame(packet *Packet, codec byte, payload []byte) ([]byte, error) {
 	default:
 		return nil, fmt.Errorf("unsupported transport protocol: %s", protocol)
 	}
+}
+
+// validateUDPHeader checks every UDP header field before it is narrowed to
+// its wire width; out-of-range values would otherwise wrap silently.
+func validateUDPHeader(h *HeaderUDP) error {
+	if h == nil {
+		return fmt.Errorf("UDP packets require a UDP header")
+	}
+	if h.PacketID < 0 || h.PacketID > math.MaxUint16 {
+		return fmt.Errorf("UDP packet ID out of range: %d", h.PacketID)
+	}
+	if h.AVLPacketID < 0 || h.AVLPacketID > math.MaxUint8 {
+		return fmt.Errorf("UDP AVL packet ID out of range: %d", h.AVLPacketID)
+	}
+	if h.IMEILength < 0 || h.IMEILength > math.MaxUint16 {
+		return fmt.Errorf("UDP IMEI length out of range: %d", h.IMEILength)
+	}
+	if len(h.IMEI) > math.MaxUint16 {
+		return fmt.Errorf("UDP IMEI is too long: %d bytes", len(h.IMEI))
+	}
+	if h.IMEILength != 0 && h.IMEILength != int64(len(h.IMEI)) {
+		return fmt.Errorf("UDP IMEI length mismatch: declared %d, actual %d", h.IMEILength, len(h.IMEI))
+	}
+	return nil
 }
 
 // encodeAVL serializes AVL records into the codec payload (excluding the

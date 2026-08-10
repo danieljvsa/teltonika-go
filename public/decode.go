@@ -118,6 +118,12 @@ func DecodeCodecData(data []byte, codec CodecID, protocol Protocol) (*Packet, er
 		return nil, fmt.Errorf("empty payload")
 	}
 
+	switch protocol {
+	case ProtocolTCP, ProtocolUDP:
+	default:
+		return nil, fmt.Errorf("unsupported transport protocol: %q", protocol)
+	}
+
 	packet := &Packet{
 		Kind:     KindData,
 		Protocol: protocol,
