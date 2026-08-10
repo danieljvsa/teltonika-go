@@ -57,6 +57,12 @@ For a developer manual, see [docs/README.md](docs/README.md).
 ├── LICENSE             # License (MIT)
 ├── Makefile            # Automation tasks
 ├── README.md           # Project documentation
+├── docs/               # Developer manual
+│   ├── README.md
+│   ├── getting-started.md
+│   ├── datamodel.md
+│   ├── using-the-api.md
+│   └── testing.md
 ├── public/             # Public package: the modern public API
 │   ├── decode.go       # Decode, decode helpers
 │   ├── doc.go          # Package documentation
@@ -70,9 +76,6 @@ For a developer manual, see [docs/README.md](docs/README.md).
 │   │   └── main.go     # Decode a Codec 08 frame
 │   └── encode/
 │       └── main.go     # Encode Codec 08 + login frames
-├── cmd/
-│   └── teltonika_go/
-│       └── main.go     # CLI entry point
 ├── internal/           # Internal logic (not imported externally)
 │   ├── decoder/
 │   │   └── models.go   # Decoding-related structs

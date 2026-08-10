@@ -15,10 +15,10 @@ without internal implementation types.
 
 | Document | What it covers |
 | --- | --- |
-| getting-started.md | Add the library, decode a frame, encode a frame |
-| datamodel.md | Wire frames, codecs, and the public data types |
-| using-the-api.md | Decode and encode with options, command codecs, legacy API |
-| testing.md | Build, test, vet, format, and fuzz the library |
+| [getting-started.md](getting-started.md) | Add the library, decode a frame, encode a frame |
+| [datamodel.md](datamodel.md) | Wire frames, codecs, and the public data types |
+| [using-the-api.md](using-the-api.md) | Decode and encode with options, command codecs, legacy API |
+| [testing.md](testing.md) | Build, test, vet, format, and fuzz the library |
 
 ## Workflow
 

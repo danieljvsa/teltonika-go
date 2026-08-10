@@ -114,7 +114,7 @@ GenerationType   Codec 16 only
 - Altitude is in meters.
 - Angle is in degrees from north, clockwise.
 - Satellites is the count of visible satellites.
-- Speed is a raw value from the device.
+- Speed is the device-reported speed in kilometres per hour.
 
 ## IOElement
 

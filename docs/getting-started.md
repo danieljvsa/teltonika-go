@@ -103,8 +103,12 @@ func main() {
 }
 ```
 
-`Encode` and `Decode` are inverse operations. `Decode(Encode(p))`
-equals `p` for every packet `p` that the library accepts.
+`Encode` and `Decode` are designed to preserve the packet's wire-level
+meaning. Some values can be normalized to the precision and canonical
+representation supported by the selected codec.
+
+Complete official fixtures in the conformance suite decode and
+re-encode byte-for-byte where the codec and frame are fully supported.
 
 ## Next steps
 

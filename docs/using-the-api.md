@@ -24,12 +24,13 @@ TCP does not preserve message boundaries. Buffer the incoming bytes
 until a complete frame is available.
 
 1. Read the eight-byte header.
-2. Take the Data Field Length from bytes four to eight.
-3. Wait until you have `8 + Data Field Length + 4` bytes.
-4. Call `Decode` with the buffered bytes.
+2. Read the Data Field Length from header bytes `[4:8]`.
+3. Calculate the complete frame size as `8 + Data Field Length + 4`.
+4. Wait until that number of bytes is available.
+5. Call `Decode` with exactly one complete frame.
 
-The four extra bytes are the trailing record count and the four-byte
-CRC.
+The four bytes after the Data Field are the CRC. The trailing record
+count is already included in the Data Field Length.
 
 ## Decode options
 
@@ -54,8 +55,9 @@ frame, err := teltonika.Encode(packet)
 ```
 
 The encoder writes the transport header, the codec id, the trailing
-count, and the CRC for TCP. It validates the range of every field. An
-out-of-range value returns an error instead of a silent wrap.
+count, and the CRC for TCP. It validates protocol fields that must fit
+fixed wire widths and returns an error instead of silently truncating
+out-of-range values.
 
 A UDP packet requires a valid `Header.UDP` with a packet ID and an AVL
 packet ID. The IMEI is optional. Set the header on the packet before
