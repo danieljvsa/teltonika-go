@@ -177,12 +177,10 @@ func TestDecodeEncodeRoundTripCommands(t *testing.T) {
 			}
 			resp := decoded.Commands[0].Responses[0]
 			if tt.codec == teltonika.Codec14 {
-				// Codec 14 embeds the IMEI and message as one payload; only
-				// the hex message reliably round-trips.
-				if resp.HexMessage == "" {
-					t.Fatalf("expected hex message for codec 14")
+				// Codec 14 decodes the leading 8 bytes as a hex IMEI.
+				if resp.IMEI != "0123456789abcdef" {
+					t.Fatalf("imei round-trip mismatch: %q", resp.IMEI)
 				}
-				return
 			}
 			if resp.Response != "OK" {
 				t.Fatalf("response round-trip mismatch: %q", resp.Response)

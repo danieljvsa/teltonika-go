@@ -222,6 +222,19 @@ func decodeAVL(codec CodecID, payload []byte, protocol Protocol, format ioFormat
 		})
 	}
 
+	// All bytes after the records are the trailing record count and, for TCP
+	// frames, the four-byte CRC. Reject anything else.
+	expectedRemainder := 1
+	if protocol == ProtocolTCP {
+		expectedRemainder = 5
+	}
+	if remaining := len(payload) - read; remaining != expectedRemainder {
+		return nil, fmt.Errorf("unexpected trailing data: %d bytes", remaining)
+	}
+	if trailing := int(payload[read]); trailing != numberOfRecords {
+		return nil, fmt.Errorf("record count mismatch: initial %d, trailing %d", numberOfRecords, trailing)
+	}
+
 	return records, nil
 }
 
@@ -415,16 +428,21 @@ func decodeCommandResponses(payload []byte, protocol Protocol, withTimestamp boo
 				read += int(commandSize)
 			}
 		} else if withIMEI {
-			// Codec 14: full response contains IMEI + command message.
-			imei, err := decodeIMEI(payload[read : read+int(responseSize)])
+			// Codec 14: response is an 8-byte IMEI followed by the command message.
+			if len(payload) < read+8 {
+				return nil, fmt.Errorf("data length too short")
+			}
+			imei, err := decodeIMEI(payload[read : read+8])
 			if err != nil {
 				return nil, fmt.Errorf("error parsing IMEI: %w", err)
 			}
 			cmd.IMEI = imei
-			if err := decodeCommandMessage(payload, read, responseSize, &cmd); err != nil {
+			read += 8
+			commandSize := int64(responseSize) - 8
+			if err := decodeCommandMessage(payload, read, commandSize, &cmd); err != nil {
 				return nil, err
 			}
-			read += int(responseSize)
+			read += int(commandSize)
 		} else {
 			// Codec 12: just the command message.
 			if err := decodeCommandMessage(payload, read, responseSize, &cmd); err != nil {

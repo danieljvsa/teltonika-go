@@ -24,6 +24,11 @@ func decodeHeader(data []byte) (*decodedHeader, error) {
 
 	if isTCP(data) {
 		length := int64(binary.BigEndian.Uint32(data[4:8]))
+		// The Data Field Length covers the codec id, records and trailing
+		// record count; the eight-byte header and four-byte CRC are excluded.
+		if length != int64(len(data)-12) {
+			return nil, fmt.Errorf("TCP data length mismatch: declared %d, actual %d", length, len(data)-12)
+		}
 		return &decodedHeader{
 			protocol: ProtocolTCP,
 			header: Header{TCP: &HeaderTCP{
@@ -36,6 +41,12 @@ func decodeHeader(data []byte) (*decodedHeader, error) {
 	// UDP header: length(2) packetId(2) [version skipped] avlId(1)
 	//            imeiLen(2) imei(...)
 	length := int64(binary.BigEndian.Uint16(data[0:2]))
+	// The declared length normally equals len(data)-2, but real devices and
+	// truncated captures may declare more. Only reject when the frame
+	// carries more bytes than the header declares, i.e. a corrupt length.
+	if int(length) < len(data)-2 {
+		return nil, fmt.Errorf("UDP length mismatch: declared %d is smaller than frame %d", length, len(data)-2)
+	}
 	read := 2
 
 	if len(data) < read+3 {

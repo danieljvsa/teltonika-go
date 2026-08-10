@@ -8,18 +8,37 @@ import (
 	tools "github.com/danieljvsa/teltonika-go/tools"
 )
 
+// EncodeOption configures packet encoding.
+type EncodeOption func(*encodeOptions)
+
+type encodeOptions struct {
+	strictIMEI bool
+}
+
+// WithStrictIMEI enables strict login identifier validation: the IMEI must be
+// exactly 15 decimal digits. By default login encoding only rejects empty and
+// oversized identifiers, matching the lenient behavior expected by legacy
+// deployments.
+func WithStrictIMEI() EncodeOption {
+	return func(o *encodeOptions) { o.strictIMEI = true }
+}
+
 // Encode serializes a Packet into a complete, wire-ready Teltonika frame
 // (including transport header, codec id and CRC for TCP).
 //
 // The returned frame can be fed back to Decode, i.e. Decode(Encode(p)) == p.
-func Encode(packet *Packet) ([]byte, error) {
+func Encode(packet *Packet, opts ...EncodeOption) ([]byte, error) {
 	if packet == nil {
 		return nil, fmt.Errorf("packet is nil")
+	}
+	o := encodeOptions{}
+	for _, opt := range opts {
+		opt(&o)
 	}
 
 	switch packet.Kind {
 	case KindLogin:
-		return encodeLogin(packet)
+		return encodeLogin(packet, o)
 	case KindData:
 		return encodeDataFrame(packet)
 	default:
@@ -27,7 +46,7 @@ func Encode(packet *Packet) ([]byte, error) {
 	}
 }
 
-func encodeLogin(packet *Packet) ([]byte, error) {
+func encodeLogin(packet *Packet, opts encodeOptions) ([]byte, error) {
 	imei := []byte(packet.IMEI)
 	if len(imei) == 0 {
 		return nil, fmt.Errorf("login IMEI is empty")
@@ -35,10 +54,28 @@ func encodeLogin(packet *Packet) ([]byte, error) {
 	if len(imei) > 65535 {
 		return nil, fmt.Errorf("IMEI too long")
 	}
+	if opts.strictIMEI {
+		if err := validateIMEI(packet.IMEI); err != nil {
+			return nil, err
+		}
+	}
 	frame := make([]byte, 2+len(imei))
 	binary.BigEndian.PutUint16(frame[0:2], uint16(len(imei)))
 	copy(frame[2:], imei)
 	return frame, nil
+}
+
+// validateIMEI requires an identifier of exactly 15 decimal digits.
+func validateIMEI(imei string) error {
+	if len(imei) != 15 {
+		return fmt.Errorf("IMEI must be exactly 15 digits, got %d", len(imei))
+	}
+	for _, r := range imei {
+		if r < '0' || r > '9' {
+			return fmt.Errorf("IMEI must contain only decimal digits: %q", imei)
+		}
+	}
+	return nil
 }
 
 func encodeDataFrame(packet *Packet) ([]byte, error) {
@@ -71,49 +108,53 @@ func wrapFrame(packet *Packet, codec byte, payload []byte) ([]byte, error) {
 		protocol = ProtocolTCP
 	}
 
-	if protocol == ProtocolTCP {
+	switch protocol {
+	case ProtocolTCP:
 		// frame = header(8) + codec + payload(with CRC)
 		payload = appendCRC(append([]byte{codec}, payload...))
 		frame := make([]byte, 8, 8+len(payload))
-		binary.BigEndian.PutUint32(frame[4:8], uint32(len(payload)))
+		// Data Field Length covers the codec id, records and trailing record
+		// count only; the eight-byte header and four-byte CRC are excluded.
+		binary.BigEndian.PutUint32(frame[4:8], uint32(len(payload)-4))
 		return append(frame, payload...), nil
-	}
 
-	// UDP frame = length(2) packetId(2) version(1) avlPacketId(1)
-	//            imeiLen(2) imei + codec + payload (no CRC)
-	h := packet.Header.UDP
-	imei := []byte{}
-	imeiLen := uint16(0)
-	packetID := uint16(0)
-	avlPacketID := byte(0)
-	if h != nil {
-		imei = []byte(h.IMEI)
-		imeiLen = uint16(h.IMEILength)
+	case ProtocolUDP:
+		// UDP frame = length(2) packetId(2) version(1) avlPacketId(1)
+		//            imeiLen(2) imei + codec + payload (no CRC)
+		h := packet.Header.UDP
+		if h == nil {
+			return nil, fmt.Errorf("UDP packets require a UDP header")
+		}
+		imei := []byte(h.IMEI)
+		imeiLen := uint16(h.IMEILength)
 		if imeiLen == 0 && len(h.IMEI) > 0 {
 			imeiLen = uint16(len(h.IMEI))
 		}
-		packetID = uint16(h.PacketID)
-		avlPacketID = byte(h.AVLPacketID)
+		packetID := uint16(h.PacketID)
+		avlPacketID := byte(h.AVLPacketID)
+
+		mid := make([]byte, 6, 6+len(imei))
+		binary.BigEndian.PutUint16(mid[0:2], packetID)
+		mid[2] = 0x01 // version byte
+		mid[3] = avlPacketID
+		binary.BigEndian.PutUint16(mid[4:6], imeiLen)
+		mid = append(mid, imei...)
+
+		codecPart := append([]byte{codec}, payload...)
+		length := len(mid) + len(codecPart)
+		if length > 65535 {
+			return nil, fmt.Errorf("UDP frame too large")
+		}
+
+		frame := make([]byte, 2, 2+length)
+		binary.BigEndian.PutUint16(frame[0:2], uint16(length))
+		frame = append(frame, mid...)
+		frame = append(frame, codecPart...)
+		return frame, nil
+
+	default:
+		return nil, fmt.Errorf("unsupported transport protocol: %s", protocol)
 	}
-
-	mid := make([]byte, 6, 6+len(imei))
-	binary.BigEndian.PutUint16(mid[0:2], packetID)
-	mid[2] = 0x01 // version byte
-	mid[3] = avlPacketID
-	binary.BigEndian.PutUint16(mid[4:6], imeiLen)
-	mid = append(mid, imei...)
-
-	codecPart := append([]byte{codec}, payload...)
-	length := len(mid) + len(codecPart)
-	if length > 65535 {
-		return nil, fmt.Errorf("UDP frame too large")
-	}
-
-	frame := make([]byte, 2, 2+length)
-	binary.BigEndian.PutUint16(frame[0:2], uint16(length))
-	frame = append(frame, mid...)
-	frame = append(frame, codecPart...)
-	return frame, nil
 }
 
 // encodeAVL serializes AVL records into the codec payload (excluding the
@@ -313,20 +354,28 @@ func encodeCommand(codec CodecID, commands []Command) ([]byte, error) {
 	if len(commands) == 0 {
 		return nil, fmt.Errorf("no commands to encode")
 	}
-	if len(commands) > 255 {
-		return nil, fmt.Errorf("command count exceeds uint8 range")
+	if len(commands) > 1 {
+		return nil, fmt.Errorf("multiple command groups are not supported")
 	}
 
-	responses := commands[0].Responses
-	commandType := commands[0].Type
+	group := commands[0]
+	responses := group.Responses
+	if len(responses) == 0 {
+		return nil, fmt.Errorf("no responses to encode")
+	}
+	if len(responses) > 255 {
+		return nil, fmt.Errorf("response count exceeds uint8 range")
+	}
 
-	responseType, err := resolveCommandType(codec, commandType)
+	responseType, err := resolveCommandType(codec, group.Type)
 	if err != nil {
 		return nil, err
 	}
 
+	// The leading and trailing count fields carry the number of encoded
+	// responses, not the number of command groups.
 	buffer := &bytes.Buffer{}
-	buffer.WriteByte(byte(len(commands)))
+	buffer.WriteByte(byte(len(responses)))
 	buffer.WriteByte(responseType)
 
 	for _, response := range responses {
@@ -378,7 +427,7 @@ func encodeCommand(codec CodecID, commands []Command) ([]byte, error) {
 		buffer.Write(payload)
 	}
 
-	buffer.WriteByte(byte(len(commands)))
+	buffer.WriteByte(byte(len(responses)))
 	return buffer.Bytes(), nil
 }
 
