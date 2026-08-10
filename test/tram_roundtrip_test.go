@@ -12,7 +12,9 @@ import (
 )
 
 func buildTCPTram(codecID byte, payload []byte) []byte {
-	dataLength := uint32(len(payload) + 1)
+	// payload = records + trailing count + CRC. The Data Field Length covers
+	// the codec id, records and trailing count but not the 4-byte CRC.
+	dataLength := uint32(len(payload) + 1 - 4)
 	header := make([]byte, 8)
 	binary.BigEndian.PutUint32(header[4:8], dataLength)
 	tram := append(header, codecID)

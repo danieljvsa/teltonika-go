@@ -1,7 +1,6 @@
 package teltonika_go_test
 
 import (
-	"encoding/hex"
 	"testing"
 	"time"
 
@@ -237,10 +236,13 @@ func TestEncodeDecodeCodec14RoundTrip(t *testing.T) {
 		t.Fatalf("decoded responses are nil")
 	}
 
-	payload := append([]byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF}, []byte("OK")...)
-	expectedHex := hex.EncodeToString(payload)
-	if (*decoded.Records[0].CommandResponses)[0].HexMessage != expectedHex {
-		t.Errorf("expected hex %s, got %s", expectedHex, (*decoded.Records[0].CommandResponses)[0].HexMessage)
+	// Codec 14 splits the response into an 8-byte hex IMEI and the message.
+	response := (*decoded.Records[0].CommandResponses)[0]
+	if response.IMEI != "0123456789abcdef" {
+		t.Errorf("expected imei 0123456789abcdef, got %s", response.IMEI)
+	}
+	if response.Response != "OK" {
+		t.Errorf("expected response OK, got %s", response.Response)
 	}
 }
 
