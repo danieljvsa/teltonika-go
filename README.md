@@ -3,6 +3,8 @@
 A lightweight Go library to decode and work with binary data from **Teltonika GPS devices**, including login and AVL data frames (Codecs 08, 8E, 12, 13, 14, 15 and 16) over TCP and UDP.
 This version uses a clean, idiomatic Go project layout to separate concerns between command-line usage, internal logic, and reusable packages.
 
+For a developer manual, see [docs/README.md](docs/README.md).
+
 ---
 
 ## 📦 Version
