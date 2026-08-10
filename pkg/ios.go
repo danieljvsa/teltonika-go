@@ -1,323 +1,48 @@
 package teltonika_go
 
 import (
-	"encoding/hex"
-	"strconv"
-
 	io_domain "github.com/danieljvsa/teltonika-go/internal/io"
-	tools "github.com/danieljvsa/teltonika-go/tools"
+	teltonika "github.com/danieljvsa/teltonika-go/public"
 )
 
+// DecodeIos8 decodes a Codec 8 I/O block and returns the legacy internal
+// response model.
 func DecodeIos8(data []byte, startByte int64) (*io_domain.ResponseDecode, error) {
-	ios_data := []io_domain.IOData{}
-	if len(data) < 4 {
-		return &io_domain.ResponseDecode{IOs: ios_data, NumberOfIOs: 0, LastByte: 0}, nil
-	}
-
-	ios_read := 0
-	byte := startByte
-	ios_number, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 1
-
-	number_ios_one_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 1
-	for range int(number_ios_one_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += 1
-		value := hex.EncodeToString(data[byte : byte+1])
-
-		byte += 1
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
-	}
-
-	number_ios_two_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 1
-	for range int(number_ios_two_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += 1
-		value := hex.EncodeToString(data[byte : byte+2])
-
-		byte += 2
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
-	}
-
-	number_ios_four_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 1
-	for range int(number_ios_four_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += 1
-		value := hex.EncodeToString(data[byte : byte+4])
-
-		byte += 4
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
-	}
-
-	number_ios_eight_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 1
-
-	for range int(number_ios_eight_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += 1
-		value := hex.EncodeToString(data[byte : byte+8])
-
-		byte += 8
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
-	}
-
-	return &io_domain.ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number, LastByte: byte}, nil
+	return decodeIos(data, startByte, 1, false, false)
 }
 
+// DecodeIos8Extended decodes a Codec 8E I/O block and returns the legacy
+// internal response model.
 func DecodeIos8Extended(data []byte, startByte int64) (*io_domain.ResponseDecode, error) {
-	ios_data := []io_domain.IOData{}
-	if len(data) < 4 {
-		return &io_domain.ResponseDecode{IOs: ios_data, NumberOfIOs: 0}, nil
-	}
-
-	ios_read := 0
-	byte := startByte
-	ios_number, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 2
-	number_ios_one_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 2
-	for range int(number_ios_one_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += 2
-		value := hex.EncodeToString(data[byte : byte+1])
-
-		byte += 1
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
-	}
-
-	number_ios_two_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 2
-	for range int(number_ios_two_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += 2
-		value := hex.EncodeToString(data[byte : byte+2])
-
-		byte += 2
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
-	}
-
-	number_ios_four_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 2
-	for range int(number_ios_four_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += 2
-		value := hex.EncodeToString(data[byte : byte+4])
-
-		byte += 4
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
-	}
-
-	number_ios_eight_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 2
-	for range int(number_ios_eight_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += 2
-		value := hex.EncodeToString(data[byte : byte+8])
-
-		byte += 8
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
-	}
-
-	number_ios_x_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 2
-	for range int(number_ios_x_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += 2
-
-		io_length, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+2]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += 2
-
-		value := hex.EncodeToString(data[byte : byte+io_length])
-
-		byte += io_length
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
-	}
-
-	return &io_domain.ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number, LastByte: byte}, nil
+	return decodeIos(data, startByte, 2, false, true)
 }
 
+// DecodeIos16 decodes a Codec 16 I/O block and returns the legacy internal
+// response model, including the generation type.
 func DecodeIos16(data []byte, startByte int64) (*io_domain.ResponseDecode, error) {
-	ios_read := 0
-	ios_id_length := int64(2)
-	byte := startByte
-	ios_data := []io_domain.IOData{}
+	return decodeIos(data, startByte, 2, true, false)
+}
 
-	if len(data) < 4 {
-		return &io_domain.ResponseDecode{IOs: ios_data, NumberOfIOs: 0, LastByte: 0}, nil
+func decodeIos(data []byte, startByte int64, idSize int, withGen bool, hasXGroup bool) (*io_domain.ResponseDecode, error) {
+	// Preserve legacy behavior: too-short input decodes to an empty result.
+	if int64(len(data))-startByte < 4 {
+		return &io_domain.ResponseDecode{IOs: []io_domain.IOData{}, NumberOfIOs: 0, LastByte: 0}, nil
 	}
 
-	generation_type, err := tools.GetGenerationType(data[byte:byte+1], 0, 1)
+	decoded, err := teltonika.DecodeCodecIO(data, int(startByte), idSize, withGen, hasXGroup)
 	if err != nil {
-		return nil, err
-	}
-	byte += 1
-
-	ios_number, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 1
-
-	number_ios_one_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 1
-	for range int(number_ios_one_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+ios_id_length]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += ios_id_length
-		value := hex.EncodeToString(data[byte : byte+1])
-
-		byte += 1
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
+		return &io_domain.ResponseDecode{IOs: []io_domain.IOData{}, NumberOfIOs: 0, LastByte: int64(decoded.NextOffset), GenerationType: decoded.GenerationType}, err
 	}
 
-	number_ios_two_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 1
-	for range int(number_ios_two_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+ios_id_length]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += ios_id_length
-		value := hex.EncodeToString(data[byte : byte+2])
-
-		byte += 2
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
+	legacy := make([]io_domain.IOData, 0, len(decoded.Elements))
+	for _, io := range decoded.Elements {
+		legacy = append(legacy, io_domain.IOData{IO: io.ID, Value: io.Value})
 	}
 
-	number_ios_four_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 1
-	for range int(number_ios_four_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+ios_id_length]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += ios_id_length
-		value := hex.EncodeToString(data[byte : byte+4])
-
-		byte += 4
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
-	}
-
-	number_ios_eight_byte, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+1]), 16, 64)
-	if err != nil {
-		return nil, err
-	}
-	byte += 1
-
-	for range int(number_ios_eight_byte) {
-		id, err := strconv.ParseInt(hex.EncodeToString(data[byte:byte+ios_id_length]), 16, 64)
-		if err != nil {
-			return nil, err
-		}
-		byte += ios_id_length
-		value := hex.EncodeToString(data[byte : byte+8])
-
-		byte += 8
-		io := io_domain.IOData{IO: id, Value: value}
-		ios_data = append(ios_data, io)
-		ios_read += 1
-	}
-
-	return &io_domain.ResponseDecode{IOs: ios_data, NumberOfIOs: ios_number, LastByte: byte, GenerationType: generation_type}, nil
+	return &io_domain.ResponseDecode{
+		IOs:            legacy,
+		NumberOfIOs:    int64(len(decoded.Elements)),
+		LastByte:       int64(decoded.NextOffset),
+		GenerationType: decoded.GenerationType,
+	}, nil
 }
