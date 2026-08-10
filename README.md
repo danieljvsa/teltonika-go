@@ -151,8 +151,11 @@ func main() {
 }
 ```
 
-Blocks of multiple frames arriving over TCP can be split with the framing
-helpers in `tools/` (e.g. `tools.IsValidTram`).
+TCP does not preserve message boundaries: a single socket read may contain
+part of a frame, one complete frame, or several frames. Callers must buffer
+incoming bytes until a complete frame is available — read the eight-byte
+header first, take the Data Field Length (bytes 4-8), and wait for
+`8 + DataLength + 4` bytes before calling `Decode`.
 
 ### Encode a frame with the public package
 
@@ -229,18 +232,40 @@ its decimal string (`"11"`) and encoding maps it back, so these frames
 round-trip byte-for-byte.
 
 ```go
-packet := &teltonika.Packet{
-	Kind:     teltonika.KindData,
-	Protocol: teltonika.ProtocolTCP,
-	Codec:    teltonika.Codec15,
-	Commands: []teltonika.Command{
-		{
-			Type: "11", // raw response type byte 0x0B
-			Responses: []teltonika.CommandResponse{
-				{IMEI: "0123456789123456", Response: "Hello!\n"},
+package main
+
+import (
+	"time"
+
+	teltonika "github.com/danieljvsa/teltonika-go/public"
+)
+
+func main() {
+	timestamp := time.Now().UTC()
+
+	packet := &teltonika.Packet{
+		Kind:     teltonika.KindData,
+		Protocol: teltonika.ProtocolTCP,
+		Codec:    teltonika.Codec15,
+		Commands: []teltonika.Command{
+			{
+				Type: "11", // raw response type byte 0x0B
+				Responses: []teltonika.CommandResponse{
+					{
+						Timestamp: &timestamp,
+						IMEI:      "0123456789123456",
+						Response:  "Hello!\n",
+					},
+				},
 			},
 		},
-	},
+	}
+
+	frame, err := teltonika.Encode(packet)
+	if err != nil {
+		panic(err)
+	}
+	_ = frame
 }
 ```
 
